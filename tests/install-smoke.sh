@@ -27,6 +27,17 @@ echo "$HELP" | grep -qE '^  all  '         || fail "help missing all row"
 "$INSTALL_SH" --target=openclaw    --prefix="$TMP/oc" --mode=copy --force >/dev/null 2>&1 || fail "valid target=openclaw + mode=copy should exit 0"
 "$INSTALL_SH" --target=dsh         --prefix="$TMP/dsh" --mode=symlink --force >/dev/null 2>&1 || fail "valid target=dsh + force should exit 0"
 
+# Task 3: claude-code install content assertions
+[[ -f "$TMP/cc/SKILL.md" ]]                                || fail "claude-code: SKILL.md missing"
+[[ -d "$TMP/cc/prompts" ]]                                 || fail "claude-code: prompts/ missing"
+[[ -d "$TMP/cc/rules" ]]                                   || fail "claude-code: rules/ missing"
+[[ -d "$TMP/cc/schemas" ]]                                 || fail "claude-code: schemas/ missing"
+[[ -d "$TMP/cc/examples" ]]                                || fail "claude-code: examples/ missing"
+[[ -d "$TMP/cc/tests" ]]                                   || fail "claude-code: tests/ missing"
+grep -q '^name: change-pilot' "$TMP/cc/SKILL.md"           || fail "claude-code: SKILL.md frontmatter name missing"
+grep -q '^description:' "$TMP/cc/SKILL.md"                 || fail "claude-code: SKILL.md frontmatter description missing"
+pass "claude-code install contents"
+
 if "$INSTALL_SH" --target=bogus --prefix="$TMP/bogus" >/dev/null 2>&1; then
   fail "unknown target should exit non-zero"
 fi
