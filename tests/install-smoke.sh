@@ -38,6 +38,14 @@ grep -q '^name: change-pilot' "$TMP/cc/SKILL.md"           || fail "claude-code:
 grep -q '^description:' "$TMP/cc/SKILL.md"                 || fail "claude-code: SKILL.md frontmatter description missing"
 pass "claude-code install contents"
 
+# Task 4: openclaw install content assertions
+"$INSTALL_SH" --target=openclaw --prefix="$TMP/openclaw" --mode=copy --force >/dev/null
+[[ -f "$TMP/openclaw/SKILL.md" ]]                            || fail "openclaw: SKILL.md missing"
+[[ -d "$TMP/openclaw/prompts" ]]                             || fail "openclaw: prompts/ missing"
+grep -q '^name: change-pilot' "$TMP/openclaw/SKILL.md"      || fail "openclaw: frontmatter name missing"
+
+pass "openclaw install copies SKILL.md and all subdirs"
+
 if "$INSTALL_SH" --target=bogus --prefix="$TMP/bogus" >/dev/null 2>&1; then
   fail "unknown target should exit non-zero"
 fi
