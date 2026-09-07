@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://change-pilot.local/schemas/output.schema.json",
+  "title": "Change Pilot Output",
+  "description": "Output contract for the change-pilot skill. customer_output is always returned; analysis is only included in debug mode.",
+  "type": "object",
+  "required": ["customer_output"],
+  "properties": {
+    "customer_output": {
+      "type": "object",
+      "description": "The customer-facing result. The only block intended for end-user consumption.",
+      "required": ["description"],
+      "properties": {
+        "title": {
+          "type": ["string", "null"],
+          "description": "Short title of the change. Null for trivial single-sentence changes."
+        },
+        "description": {
+          "type": "string",
+          "description": "Customer-facing description, 1-2 sentences, professional and concise.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "analysis": {
+      "type": "object",
+      "description": "Internal analysis block, only emitted in debug mode. Not for end users.",
+      "properties": {
+        "change_types": {
+          "type": "array",
+          "description": "Recognized change types from the controlled vocabulary.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "new_feature",
+              "optimization",
+              "bug_fix",
+              "compatibility",
+              "security_compliance",
+              "version_component"
+            ]
+          }
+        },
+        "business_intent": {
+          "type": "string",
+          "description": "One-sentence business purpose of the change."
+        },
+        "business_facts": {
+          "type": "array",
+          "description": "Business facts that pass through to the customer output.",
+          "items": { "type": "string" }
+        },
+        "technical_details": {
+          "type": "array",
+          "description": "Technical implementation details that were hidden or abstracted.",
+          "items": { "type": "string" }
+        },
+        "hidden_details": {
+          "type": "array",
+          "description": "Internal identifiers, file paths, IDs that were hidden.",
+          "items": { "type": "string" }
+        },
+        "abstractions": {
+          "type": "array",
+          "description": "Mapping from technical source to business target.",
+          "items": {
+            "type": "object",
+            "required": ["source", "target"],
+            "properties": {
+              "source": { "type": "string" },
+              "target": { "type": "string" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "description": "Self-check flags from the validate stage. Always present.",
+      "properties": {
+        "technical_leakage": { "type": "boolean" },
+        "internal_id_leakage": { "type": "boolean" },
+        "unsupported_claim": { "type": "boolean" },
+        "overstatement": { "type": "boolean" },
+        "business_fact_loss": { "type": "boolean" },
+        "merged_correctly": { "type": "boolean" },
+        "passed": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

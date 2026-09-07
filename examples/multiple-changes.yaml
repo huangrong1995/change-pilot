@@ -1,0 +1,97 @@
+# Multiple-change scenarios — merging and splitting decisions
+
+examples:
+
+  - id: merge-wireless-dock
+    input: >
+      修改 P2P；增加 AP；增加 DHCP；调整 IP。
+    analysis:
+      business_intent: 无线扩展坞连接与网络配置能力扩展
+      change_types: [new_feature]
+      business_facts:
+        - 无线扩展坞能力扩展
+      technical_details:
+        - P2P 修改
+        - AP 增加
+        - DHCP 增加
+        - IP 调整
+      hidden_details: []
+      abstractions:
+        - source: P2P
+          target: 无线连接能力
+        - source: AP
+          target: 无线接入能力
+        - source: DHCP
+          target: 网络配置能力
+        - source: IP
+          target: 网络配置能力
+      multiple_changes: true
+      merge_grouping: 四个变更都属于"无线扩展坞相关网络与连接能力"，应合并为一项。
+    customer_output:
+      title: 无线扩展坞支持优化
+      description: 新增无线扩展坞相关功能，提升设备与无线扩展设备的连接及使用支持能力。
+
+  - id: split-three-changes
+    input: >
+      1. 修复扫码稳定性问题；
+      2. 修复默认数据卡切换问题；
+      3. 增加系统日志广播功能。
+    analysis:
+      business_intent: 三个独立的业务变化
+      change_types: [bug_fix, bug_fix, new_feature]
+      business_facts:
+        - 扫码稳定性问题已修复
+        - 默认数据卡切换问题已修复
+        - 新增系统日志广播功能
+      technical_details:
+        - 系统日志广播实现
+      hidden_details: []
+      abstractions: []
+      multiple_changes: true
+      merge_grouping: 三个变更分别属于不同业务领域（扫码 / 移动网络 / 系统日志），应拆分。
+    customer_outputs:
+      - title: 扫码功能优化
+        description: 优化扫码功能，提升扫码稳定性。
+      - title: 移动网络功能优化
+        description: 优化移动网络切换功能，解决特定场景下数据卡切换异常的问题。
+      - title: 系统日志功能扩展
+        description: 新增系统日志广播功能。
+
+  - id: merge-pin-suite
+    input: >
+      优化 PIN 操作流程；增强密钥管理能力；修复部分业务场景下的兼容性问题。
+    analysis:
+      business_intent: 安全模块在特定业务场景下的支持能力与兼容性提升
+      change_types: [optimization, compatibility]
+      business_facts:
+        - PIN 操作流程优化
+        - 密钥管理能力增强
+        - 部分业务场景下的兼容性问题已修复
+      technical_details: []
+      hidden_details: []
+      abstractions: []
+      multiple_changes: true
+      merge_grouping: 三项均围绕"安全模块 / PIN / 密钥管理在特定业务场景下的能力与兼容性"，可合并。
+    customer_output:
+      title: 安全模块功能优化
+      description: 优化 PIN 操作及密钥管理等相关功能，提升特定业务场景下的支持能力和兼容性。
+
+  - id: split-wifi-and-bluetooth
+    input: >
+      优化 WiFi 连接稳定性；修复蓝牙配对失败问题。
+    analysis:
+      business_intent: 两个独立的连接能力优化
+      change_types: [optimization, bug_fix]
+      business_facts:
+        - WiFi 连接稳定性提升
+        - 蓝牙配对失败问题已修复
+      technical_details: []
+      hidden_details: []
+      abstractions: []
+      multiple_changes: true
+      merge_grouping: WiFi 与蓝牙是不同产品能力，应拆分。
+    customer_outputs:
+      - title: WiFi 功能优化
+        description: 优化 WiFi 连接能力，提升连接稳定性。
+      - title: 蓝牙功能优化
+        description: 修复蓝牙配对失败问题，提升蓝牙使用体验。

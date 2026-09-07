@@ -1,0 +1,84 @@
+# Technical term handling rules
+# This file is the single source of truth for retain / abstract / hide decisions.
+# When a new term is encountered, add it here instead of hardcoding it in prompts.
+
+# Terms customers already know — keep as-is in customer output.
+retain:
+  - WiFi
+  - Bluetooth
+  - NFC
+  - PIN
+  - 扫码
+  - 移动网络
+  - 无线扩展坞
+  - 密钥管理
+  - 安全认证
+  - OTA
+  - GPS
+  - USB
+  - SIM
+  - 蜂窝网络
+  - 漫游
+  - VPN
+
+# Terms with business meaning but too technical for customers — abstract to the target phrase.
+abstract:
+  P2P: 无线连接能力
+  AP: 无线接入能力
+  DHCP: 网络配置能力
+  IP: 网络配置能力
+  CCID: 外设/设备连接相关能力
+  IMEI: 设备识别信息
+  ICCID: SIM 卡识别信息
+  MSISDN: 用户号码
+  SELinux: 系统安全策略
+  sepolicy: 系统安全策略
+  init.rc: 启动配置
+  Property: 系统配置
+  Service: 系统服务
+  Broadcast: 系统广播
+  Intent: 系统消息
+  AIDL: 接口调用
+  Binder: 进程间通信
+
+# Always hide — these are implementation artifacts, never pass to customer.
+hide:
+  # Source files
+  - "*.cpp"
+  - "*.cc"
+  - "*.c"
+  - "*.h"
+  - "*.java"
+  - "*.kt"
+  - "*.so"
+  - "*.jar"
+  - "*.apk"
+  - "*.xml"
+  - "*.mk"
+  - "*.bp"
+  - "*.gradle"
+  - "*.proto"
+
+  # Identifiers and refs
+  - commit_id
+  - git_id
+  - branch
+  - patch_id
+  - BUG_ID
+  - requirement_id
+  - 0A_ID
+  - jira_id
+  - internal_property
+  - internal_path
+  - test_engineer
+  - test_environment
+
+  # Code artifacts
+  - "set_xxx_property()"
+  - "fooService"
+  - "vendor/xxx/xxx"
+
+  # Internal component versions
+  - "NDK_V*"
+  - "kernel_*"
+  - "hal_*"

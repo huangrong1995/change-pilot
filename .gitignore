@@ -1,0 +1,25 @@
+# Local archive of pre-restructure content — not part of the public skill
+archive/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python (only used if you script around the skill)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Test artifacts (uncomment if you don't want to commit them)
+# tests/output/
+# tests/.cache/
+
+# Local environment overrides
+.env
+.env.local

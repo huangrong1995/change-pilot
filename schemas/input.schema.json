@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://change-pilot.local/schemas/input.schema.json",
+  "title": "Change Pilot Input",
+  "description": "Input contract for the change-pilot skill. raw_text is required; context is optional disambiguation only and must never be used to invent functionality or benefit.",
+  "type": "object",
+  "required": ["raw_text"],
+  "properties": {
+    "raw_text": {
+      "type": "string",
+      "description": "R&D raw change-point description, possibly containing technical implementation details, file names, IDs, version numbers, etc.",
+      "minLength": 1
+    },
+    "context": {
+      "type": "object",
+      "description": "Optional disambiguation context. Used only to help interpret raw_text. Never used to invent new functionality, performance, or benefit.",
+      "properties": {
+        "product": {
+          "type": "string",
+          "description": "Product identifier, e.g. N950"
+        },
+        "version": {
+          "type": "string",
+          "description": "Product version string, e.g. V4.1.44T19"
+        },
+        "module": {
+          "type": "string",
+          "description": "Module or feature area, e.g. 扫码"
+        }
+      },
+      "additionalProperties": true
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["default", "debug"],
+      "default": "default",
+      "description": "default returns customer_output only; debug also returns the analysis block."
+    }
+  },
+  "additionalProperties": false
+}

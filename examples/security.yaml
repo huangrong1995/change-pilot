@@ -1,0 +1,87 @@
+# Security / PIN / key management / authentication scenarios
+
+examples:
+
+  - id: pin-timeout
+    input: "PIN输入超时时间由5-200s修改为5-600s。"
+    analysis:
+      business_intent: 扩展 PIN 操作超时区间
+      change_types: [optimization]
+      business_facts:
+        - PIN 操作超时上限提升
+      technical_details:
+        - 超时参数调整
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: PIN 操作优化
+      description: 优化 PIN 操作超时机制，提升特定业务场景下的操作支持能力。
+
+  - id: key-management
+    input: "增强密钥管理模块，支持更多算法。"
+    analysis:
+      business_intent: 扩展密钥管理能力
+      change_types: [optimization]
+      business_facts:
+        - 密钥管理能力增强
+      technical_details:
+        - 算法扩展
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 密钥管理能力优化
+      description: 增强密钥管理能力，提升设备在特定业务场景下的安全性与兼容性。
+
+  - id: secure-boot
+    input: "启用 secure boot 校验流程。"
+    analysis:
+      business_intent: 启动阶段增加安全校验
+      change_types: [security_compliance]
+      business_facts:
+        - 增加启动安全校验
+      technical_details:
+        - secure boot 流程
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 启动安全增强
+      description: 启用启动阶段的安全校验流程，提升设备启动安全性。
+
+  - id: selinux-policy
+    input: "调整 SELinux 策略，解决部分场景下系统服务访问受限的问题。"
+    analysis:
+      business_intent: 修复系统安全策略导致的访问受限
+      change_types: [bug_fix, security_compliance]
+      business_facts:
+        - 特定场景下的系统访问受限问题已修复
+      technical_details:
+        - SELinux 策略调整
+      hidden_details: []
+      abstractions:
+        - source: SELinux
+          target: 系统安全策略
+      multiple_changes: false
+    customer_output:
+      title: 系统安全策略优化
+      description: 优化系统安全策略，解决特定场景下系统访问受限的问题。
+
+  - id: pin-and-key
+    input: >
+      优化 PIN 操作流程并增强密钥管理能力，修复部分业务场景下的兼容性问题。
+    analysis:
+      business_intent: PIN 与密钥管理在特定业务场景下的兼容性修复
+      change_types: [compatibility, optimization]
+      business_facts:
+        - PIN 操作流程优化
+        - 密钥管理能力增强
+        - 特定业务场景下的兼容性问题已修复
+      technical_details: []
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 安全模块功能优化
+      description: 优化 PIN 操作及密钥管理等相关功能，提升特定业务场景下的支持能力和兼容性。

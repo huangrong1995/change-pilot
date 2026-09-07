@@ -1,0 +1,81 @@
+# Basic single-line R&D notes → customer-facing descriptions
+
+examples:
+
+  - id: scan-stability
+    input: "修复扫码过程中图像数据未及时清理的问题，提升扫码稳定性。"
+    analysis:
+      business_intent: 提升扫码功能的稳定性
+      change_types: [optimization]
+      business_facts:
+        - 扫码功能稳定性提升
+      technical_details:
+        - 图像数据清理机制
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 扫码功能优化
+      description: 优化扫码功能，提升扫码稳定性。
+
+  - id: silent-install
+    input: "支持应用静默安装。"
+    analysis:
+      business_intent: 新增应用静默安装能力
+      change_types: [new_feature]
+      business_facts:
+        - 支持应用静默安装
+      technical_details: []
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 应用安装功能优化
+      description: 新增应用静默安装能力，提升设备管理效率。
+
+  - id: boot-speed
+    input: "优化启动流程，减少开机耗时。"
+    analysis:
+      business_intent: 缩短设备开机耗时
+      change_types: [optimization]
+      business_facts:
+        - 开机耗时缩短
+      technical_details:
+        - 启动流程
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 启动性能优化
+      description: 优化启动流程，缩短开机耗时。
+
+  - id: screen-brightness
+    input: "修复特定场景下屏幕亮度自动调节异常的问题。"
+    analysis:
+      business_intent: 修复屏幕亮度自动调节在特定场景下的异常
+      change_types: [bug_fix]
+      business_facts:
+        - 屏幕亮度自动调节异常已修复
+      technical_details:
+        - 自动调节触发条件
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 屏幕亮度调节优化
+      description: 修复特定场景下屏幕亮度自动调节异常的问题。
+
+  - id: language-pack
+    input: "新增阿拉伯语语言包支持。"
+    analysis:
+      business_intent: 扩展多语言支持
+      change_types: [new_feature]
+      business_facts:
+        - 新增阿拉伯语支持
+      technical_details: []
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 多语言支持扩展
+      description: 新增阿拉伯语支持，扩展设备多语言覆盖范围。

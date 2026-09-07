@@ -1,0 +1,94 @@
+# Network changes: WiFi, mobile network, wireless dock
+
+examples:
+
+  - id: wifi-fix-vietnam
+    input: "修复越南客户WiFi无法连接问题。"
+    analysis:
+      business_intent: 修复特定网络环境下的 WiFi 连接问题
+      change_types: [bug_fix]
+      business_facts:
+        - 特定网络环境下的 WiFi 连接问题已修复
+      technical_details: []
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: WiFi 连接优化
+      description: 优化 WiFi 连接能力，解决特定网络环境下的连接问题。
+
+  - id: mobile-network-switch
+    input: "修复短时间切换默认数据卡导致移动网络开关异常关闭。"
+    analysis:
+      business_intent: 修复默认数据卡切换导致的移动网络异常
+      change_types: [bug_fix]
+      business_facts:
+        - 默认数据卡切换导致的移动网络异常已修复
+      technical_details:
+        - 移动网络开关状态机
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 移动网络功能优化
+      description: 优化移动网络切换功能，解决特定场景下网络功能异常的问题。
+
+  - id: wireless-dock
+    input: "增加无线扩展坞P2P/AP/DHCP/IP配置及CCID支持。"
+    analysis:
+      business_intent: 扩展无线扩展坞的连接与外设支持能力
+      change_types: [new_feature]
+      business_facts:
+        - 无线扩展坞连接能力扩展
+        - 外设识别能力扩展
+      technical_details:
+        - P2P/AP/DHCP/IP 配置
+        - CCID 识别
+      hidden_details: []
+      abstractions:
+        - source: P2P
+          target: 无线连接能力
+        - source: AP
+          target: 无线接入能力
+        - source: DHCP
+          target: 网络配置能力
+        - source: IP
+          target: 网络配置能力
+        - source: CCID
+          target: 外设/设备连接相关能力
+      multiple_changes: false
+    customer_output:
+      title: 无线扩展坞支持扩展
+      description: 新增无线扩展坞相关功能，提升设备与无线扩展设备的连接及使用支持能力。
+
+  - id: roaming
+    input: "优化国际漫游场景下的网络切换逻辑，减少掉线。"
+    analysis:
+      business_intent: 改善国际漫游下的网络稳定性
+      change_types: [optimization]
+      business_facts:
+        - 国际漫游下的网络切换已优化
+      technical_details:
+        - 网络切换逻辑
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 漫游功能优化
+      description: 优化国际漫游场景下的网络切换逻辑，提升漫游稳定性。
+
+  - id: vpn-compat
+    input: "修复部分 VPN 客户端在 IPv6 环境下连接失败的问题。"
+    analysis:
+      business_intent: 修复 IPv6 环境下的 VPN 连接问题
+      change_types: [compatibility, bug_fix]
+      business_facts:
+        - 部分 VPN 客户端在 IPv6 环境下的连接问题已修复
+      technical_details:
+        - IPv6 网络栈
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: VPN 兼容性优化
+      description: 修复部分 VPN 客户端在 IPv6 环境下的连接问题，提升 VPN 使用兼容性。

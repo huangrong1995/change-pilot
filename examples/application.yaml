@@ -1,0 +1,71 @@
+# Application-level changes: package manager, app integration, app permissions
+
+examples:
+
+  - id: silent-install-2
+    input: "修改 PackageManager，使指定应用支持静默安装。"
+    analysis:
+      business_intent: 支持指定应用静默安装
+      change_types: [new_feature]
+      business_facts:
+        - 支持指定应用静默安装
+      technical_details:
+        - PackageManager
+      hidden_details: []
+      abstractions:
+        - source: PackageManager
+          target: 应用管理
+      multiple_changes: false
+    customer_output:
+      title: 应用管理功能优化
+      description: 优化应用管理功能，支持相关应用的静默安装。
+
+  - id: app-permission
+    input: "调整应用权限申请机制，应用首次启动时统一申请所需权限。"
+    analysis:
+      business_intent: 优化应用首次启动时的权限申请方式
+      change_types: [optimization]
+      business_facts:
+        - 应用首次启动时的权限申请方式优化
+      technical_details:
+        - 权限申请流程
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 应用权限管理优化
+      description: 优化应用首次启动时的权限申请方式，提升权限管理体验。
+
+  - id: app-launch
+    input: "优化应用启动速度，减少冷启动耗时。"
+    analysis:
+      business_intent: 缩短应用冷启动耗时
+      change_types: [optimization]
+      business_facts:
+        - 应用冷启动耗时缩短
+      technical_details:
+        - 启动流程
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 应用启动性能优化
+      description: 优化应用启动流程，缩短冷启动耗时。
+
+  - id: intent-failure
+    input: "修复部分第三方应用 Intent 调用失败导致功能异常的问题。"
+    analysis:
+      business_intent: 修复第三方应用 Intent 调用失败
+      change_types: [bug_fix, compatibility]
+      business_facts:
+        - 第三方应用 Intent 调用失败问题已修复
+      technical_details:
+        - Intent 解析
+      hidden_details: []
+      abstractions:
+        - source: Intent
+          target: 系统消息
+      multiple_changes: false
+    customer_output:
+      title: 应用兼容性优化
+      description: 修复部分第三方应用系统消息调用失败的问题，提升应用兼容性。

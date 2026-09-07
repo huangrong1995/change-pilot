@@ -1,0 +1,89 @@
+# System-level changes: package manager, system broadcast, component versions
+
+examples:
+
+  - id: silent-uninstall
+    input: "修改PackageManager相关代码，使指定应用支持静默卸载。"
+    analysis:
+      business_intent: 支持指定应用的静默卸载
+      change_types: [new_feature]
+      business_facts:
+        - 支持指定应用静默卸载
+      technical_details:
+        - PackageManager 代码修改
+      hidden_details: []
+      abstractions:
+        - source: PackageManager
+          target: 应用管理
+      multiple_changes: false
+    customer_output:
+      title: 应用管理功能优化
+      description: 优化应用管理功能，支持相关应用的静默卸载。
+
+  - id: system-broadcast
+    input: "新增系统日志广播，应用可订阅系统日志事件。"
+    analysis:
+      business_intent: 应用可订阅系统日志事件
+      change_types: [new_feature]
+      business_facts:
+        - 新增系统日志广播能力
+        - 应用可订阅系统日志事件
+      technical_details:
+        - 广播实现
+      hidden_details: []
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 系统日志功能扩展
+      description: 新增系统日志广播能力，应用可订阅系统日志事件。
+
+  - id: internal-commit-leak
+    input: "commit 8f3a21c，修复scan_service.cpp中的图像缓存问题。"
+    analysis:
+      business_intent: 修复扫码图像缓存问题
+      change_types: [bug_fix]
+      business_facts:
+        - 扫码图像缓存问题已修复
+      technical_details:
+        - 图像缓存逻辑
+      hidden_details:
+        - "commit 8f3a21c"
+        - "scan_service.cpp"
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 扫码功能优化
+      description: 优化扫码相关功能，解决图像数据处理相关问题。
+
+  - id: ndk-version-bump
+    input: "升级 NDK 组件版本 NDK_V4.1.44T18 → NDK_V4.1.44T19。"
+    analysis:
+      business_intent: 升级 NDK 内部组件版本
+      change_types: [version_component]
+      business_facts: []
+      technical_details:
+        - NDK 组件版本变更
+      hidden_details:
+        - "NDK_V4.1.44T18"
+        - "NDK_V4.1.44T19"
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 基础组件版本更新
+      description: 升级内部基础组件版本。
+
+  - id: kernel-bump
+    input: "升级 kernel 到 kernel_5.10.146。"
+    analysis:
+      business_intent: 升级内核版本
+      change_types: [version_component]
+      business_facts: []
+      technical_details:
+        - 内核升级
+      hidden_details:
+        - "kernel_5.10.146"
+      abstractions: []
+      multiple_changes: false
+    customer_output:
+      title: 基础组件版本更新
+      description: 升级内核基础组件版本。

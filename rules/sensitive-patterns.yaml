@@ -1,0 +1,54 @@
+# Sensitive information patterns
+# These regex patterns help the model recognize content that is typically internal.
+# This is NOT a security sanitization system — it's a hint to the model.
+# V1 doesn't need to be a full regex engine.
+
+patterns:
+  # Git commit hashes (7-40 hex chars)
+  commit:
+    - "\\b[0-9a-f]{7,40}\\b"
+
+  # Bug IDs
+  bug:
+    - "(?i)BUG[-_ ]?\\d+"
+    - "(?i)JIRA[-_ ]?\\d+"
+    - "(?i)ISSUE[-_ ]?\\d+"
+
+  # Requirement IDs
+  requirement:
+    - "(?i)REQ[-_ ]?\\d+"
+    - "(?i)需求[-_ ]?\\d+"
+    - "(?i)STORY[-_ ]?\\d+"
+
+  # Internal ticket IDs
+  internal_ticket:
+    - "(?i)0A[-_ ]?\\d+"
+
+  # Code files
+  file:
+    - "[\\w./-]+\\.(cpp|cc|c|h|java|kt|so|jar|xml|mk|bp|gradle|proto|apk)"
+
+  # Internal source paths
+  path:
+    - "(vendor|frameworks|packages|system|device|hardware)/[\\w./-]+"
+
+  # Git metadata
+  git:
+    - "(?i)commit\\s*[:：]"
+    - "(?i)branch\\s*[:：]"
+    - "(?i)patch\\s*[:：]"
+    - "(?i)tag\\s*[:：]"
+
+  # Internal version components
+  internal_version:
+    - "(?i)NDK[_vV][\\w.]+"
+    - "(?i)kernel[_vV][\\w.]+"
+    - "(?i)hal[_vV][\\w.]+"
+
+  # Internal property names
+  property:
+    - "(?i)(ro|persist|sys)\\.[\\w.]+"
+
+  # Test environment markers
+  test:
+    - "(?i)(测试环境|test env|test_env|lab build|debug build|monkey)"

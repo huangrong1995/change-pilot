@@ -1,0 +1,197 @@
+# Regression test cases
+# Each case has a name, an input, and either an expected output (positive check)
+# or a forbidden list (negative check — these phrases must NOT appear).
+
+cases:
+
+  # ---------- Positive checks: exact expected output ----------
+
+  - name: scan_stability
+    input: "增加扫码图像数据清理机制，提升扫码稳定性"
+    expected:
+      title: 扫码功能优化
+      description: 优化扫码功能，提升扫码稳定性。
+
+  - name: wifi_fix
+    input: "修复越南客户WiFi无法连接问题"
+    expected:
+      title: WiFi 连接优化
+      description: 优化 WiFi 连接能力，解决特定网络环境下的连接问题。
+
+  - name: mobile_network
+    input: "修复短时间切换默认数据卡导致移动网络开关异常关闭"
+    expected:
+      title: 移动网络功能优化
+      description: 优化移动网络切换功能，解决特定场景下网络功能异常的问题。
+
+  - name: wireless_dock
+    input: "增加无线扩展坞P2P/AP/DHCP/IP配置及CCID支持"
+    expected:
+      title: 无线扩展坞支持优化
+      description: 新增无线扩展坞相关功能，提升设备与无线扩展设备的连接及使用支持能力。
+
+  - name: silent_uninstall
+    input: "修改PackageManager相关代码，使指定应用支持静默卸载"
+    expected:
+      title: 应用管理功能优化
+      description: 优化应用管理功能，支持相关应用的静默卸载。
+
+  - name: pin_timeout
+    input: "PIN输入超时时间由5-200s修改为5-600s"
+    expected:
+      title: PIN 操作优化
+      description: 优化 PIN 操作超时机制，提升特定业务场景下的操作支持能力。
+
+  - name: internal_commit
+    input: "commit 8f3a21c，修复scan_service.cpp中的图像缓存问题"
+    expected:
+      title: 扫码功能优化
+      description: 优化扫码相关功能，解决图像数据处理相关问题。
+
+  - name: boot_speed
+    input: "优化启动流程，减少开机耗时。"
+    expected:
+      title: 启动性能优化
+      description: 优化启动流程，缩短开机耗时。
+
+  - name: language_pack
+    input: "新增阿拉伯语语言包支持。"
+    expected:
+      title: 多语言支持扩展
+      description: 新增阿拉伯语支持，扩展设备多语言覆盖范围。
+
+  - name: selinux_policy
+    input: "调整 SELinux 策略，解决部分场景下系统服务访问受限的问题。"
+    expected:
+      title: 系统安全策略优化
+      description: 优化系统安全策略，解决特定场景下系统访问受限的问题。
+
+  - name: secure_boot
+    input: "启用 secure boot 校验流程。"
+    expected:
+      title: 启动安全增强
+      description: 启用启动阶段的安全校验流程，提升设备启动安全性。
+
+  - name: system_broadcast
+    input: "新增系统日志广播，应用可订阅系统日志事件。"
+    expected:
+      title: 系统日志功能扩展
+      description: 新增系统日志广播能力，应用可订阅系统日志事件。
+
+  - name: ndk_version_bump
+    input: "升级 NDK 组件版本 NDK_V4.1.44T18 → NDK_V4.1.44T19。"
+    expected:
+      title: 基础组件版本更新
+      description: 升级内部基础组件版本。
+
+  - name: kernel_bump
+    input: "升级 kernel 到 kernel_5.10.146。"
+    expected:
+      title: 基础组件版本更新
+      description: 升级内核基础组件版本。
+
+  - name: screen_brightness
+    input: "修复特定场景下屏幕亮度自动调节异常的问题。"
+    expected:
+      title: 屏幕亮度调节优化
+      description: 修复特定场景下屏幕亮度自动调节异常的问题。
+
+  # ---------- Multi-change positive checks ----------
+
+  - name: multiple_changes_split
+    input: |
+      1. 修复扫码稳定性问题；
+      2. 修复默认数据卡切换问题；
+      3. 增加系统日志广播功能。
+    expected_count: 3
+
+  - name: multiple_changes_merge_wireless
+    input: |
+      修改 P2P；增加 AP；增加 DHCP；调整 IP。
+    expected:
+      title: 无线扩展坞支持优化
+      description: 新增无线扩展坞相关功能，提升设备与无线扩展设备的连接及使用支持能力。
+
+  - name: multiple_changes_merge_pin
+    input: |
+      优化 PIN 操作流程；增强密钥管理能力；修复部分业务场景下的兼容性问题。
+    expected:
+      title: 安全模块功能优化
+      description: 优化 PIN 操作及密钥管理等相关功能，提升特定业务场景下的支持能力和兼容性。
+
+  # ---------- Negative checks: forbidden phrases must NOT appear ----------
+
+  - name: no_exaggeration
+    input: "修复扫码过程中图像数据没有及时清理的问题"
+    forbidden:
+      - "显著"
+      - "大幅"
+      - "全面"
+      - "极大"
+      - "彻底"
+      - "完全"
+      - "明显"
+      - "性能提升"
+      - "稳定性提升"
+      - "速度提升"
+      - "用户体验提升"
+
+  - name: no_code_leakage
+    input: "修改 scan_service.cpp 中的图像缓存逻辑，并提交 commit 8f3a21c。"
+    forbidden:
+      - "scan_service.cpp"
+      - "8f3a21c"
+      - "commit"
+      - ".cpp"
+
+  - name: no_internal_ids
+    input: "BUG-1234 / REQ-5678 / 0A-9876 修复 WiFi 断连。"
+    forbidden:
+      - "BUG-1234"
+      - "REQ-5678"
+      - "0A-9876"
+
+  - name: no_internal_version_leakage
+    input: "升级 NDK_V4.1.44T18 到 NDK_V4.1.44T19。"
+    forbidden:
+      - "NDK_V4.1.44T18"
+      - "NDK_V4.1.44T19"
+      - "NDK"
+
+  - name: no_overstatement_speed
+    input: "修复 WiFi 在弱信号下的连接断开。"
+    forbidden:
+      - "速度"
+      - "显著"
+      - "大幅"
+      - "性能提升"
+
+  - name: no_fabricated_benefit
+    input: "修改扫码图像缓存释放逻辑。"
+    forbidden:
+      - "用户体验"
+      - "系统稳定性"
+      - "性能"
+      - "效率"
+
+  # ---------- Boundary cases ----------
+
+  - name: empty_input_rejected
+    input: ""
+    expect_error: true
+
+  - name: only_internal_ids_rejected
+    input: "BUG-1 / BUG-2 / BUG-3"
+    # When the source contains only internal IDs and no business content,
+    # the customer output should make clear there is no customer-facing change,
+    # or emit a minimal "内部组件更新" placeholder — but MUST NOT echo the IDs.
+    forbidden:
+      - "BUG-1"
+      - "BUG-2"
+      - "BUG-3"
+
+  - name: short_simple_one_sentence
+    input: "修复蓝牙配对失败。"
+    expected:
+      title: 蓝牙功能优化
+      description: 修复蓝牙配对失败问题。
