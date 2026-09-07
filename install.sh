@@ -61,17 +61,58 @@ resolve_default_prefix() {
   esac
 }
 
-main() {
-  parse_args "$@"
-  local target_dir
-  if [[ "$TARGET" == "all" ]]; then
-    target_dir="$(resolve_default_prefix "$TARGET")"
-  elif [[ -n "$PREFIX" ]]; then
+install_skill() {
+  local target="$1" mode="$2" target_dir="$3" force="$4"
+  if [[ ! -f "$REPO_ROOT/SKILL.md" ]]; then
+    die "SKILL.md not found at $REPO_ROOT — run install.sh from the change-pilot repo root"
+  fi
+  if [[ -e "$target_dir" ]]; then
+    if [[ "$force" -ne 1 ]]; then
+      die "$target_dir already exists. Re-run with --force to overwrite (will backup to .bak.<ts>)"
+    fi
+    local ts backup
+    ts="$(date +%Y%m%d%H%M%S)"
+    backup="${target_dir}.bak.${ts}"
+    mv "$target_dir" "$backup"
+    echo "backed up existing install to $backup"
+  fi
+  mkdir -p "$target_dir"
+  if [[ "$mode" == "symlink" ]]; then
+    for f in "${SKILL_FILES[@]}"; do
+      ln -sfn "$REPO_ROOT/$f" "$target_dir/$f"
+    done
+  else
+    for f in "${SKILL_FILES[@]}"; do
+      cp -R "$REPO_ROOT/$f" "$target_dir/$f"
+    done
+  fi
+  echo "installed to $target_dir (mode=$mode)"
+}
+
+run_target() {
+  local target="$1" target_dir
+  if [[ -n "$PREFIX" ]]; then
     target_dir="$PREFIX"
   else
-    target_dir="$(resolve_default_prefix "$TARGET")"
+    target_dir="$(resolve_default_prefix "$target")"
   fi
-  echo "would install target=$TARGET mode=$MODE dir=$target_dir force=$FORCE"
+  install_skill "$target" "$MODE" "$target_dir" "$FORCE"
+}
+
+main() {
+  parse_args "$@"
+  case "$TARGET" in
+    claude-code|openclaw|dsh) run_target "$TARGET" ;;
+    all)
+      for t in claude-code openclaw dsh; do
+        local saved_prefix="$PREFIX"
+        PREFIX=""
+        run_target "$t"
+        PREFIX="$saved_prefix"
+      done
+      ;;
+    *) die "unknown target: $TARGET (valid: claude-code, openclaw, dsh, all)" ;;
+  esac
 }
 
 main "$@"
