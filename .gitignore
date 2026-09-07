@@ -1,6 +1,10 @@
 # Local archive of pre-restructure content — not part of the public skill
 archive/
 
+# Local skill install — only used for in-repo testing; root project is the
+# source of truth tracked on GitHub, do not commit this directory.
+.claude/
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
