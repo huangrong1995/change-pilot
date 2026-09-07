@@ -1,75 +1,101 @@
 # Installation
 
-Change Pilot is a Claude Code Skill. Pick the install scope that matches your use case.
+Change Pilot is a Claude Code / OpenClaw / DeepSeek Harness Skill. Pick the install scope that matches your use case.
 
-## Option A — User-level install (recommended for personal use)
+## Quick reference
 
-The skill becomes available across every Claude Code project on this machine.
+| Harness | Command | Default install path |
+|---|---|---|
+| Claude Code | `./install.sh --target=claude-code` | `~/.claude/skills/change-pilot/` |
+| OpenClaw | `./install.sh --target=openclaw` | `~/.openclaw/skills/change-pilot/` |
+| DeepSeek Harness | `./install.sh --target=dsh` | `./.dsh/skills/change-pilot/` |
+| All three | `./install.sh --target=all` | (combined) |
 
-```bash
-# Clone (or download) the repo
-git clone https://github.com/<your-org>/change-pilot.git
+## Options
 
-# Copy into the Claude Code user skills directory
-mkdir -p ~/.claude/skills
-cp -r change-pilot ~/.claude/skills/change-pilot
-
-# Verify
-ls ~/.claude/skills/change-pilot
-# Should list: SKILL.md  schemas/  rules/  prompts/  examples/  tests/
+```
+--target=claude-code|openclaw|dsh|all   # required
+--mode=copy|symlink                      # default: symlink (dev), copy (distribution)
+--prefix=<dir>                           # override default target directory
+--force                                  # overwrite existing install; backs up to .bak.<ts>
 ```
 
-After this, every Claude Code session on this machine will trigger Change Pilot when you ask for R&D → customer rewrite.
+`symbolink` mode means source edits propagate to the installed skill immediately — useful for iterating on the skill itself. `copy` mode produces a standalone install that does not depend on the source repo location — useful for distribution.
 
-## Option B — Project-level install (recommended for team / CI use)
+## Per-harness detail
 
-The skill is scoped to a single project. Use this when a specific team owns the skill and wants it version-controlled with their codebase.
+### Claude Code
+
+The default location Claude Code auto-discovers is `~/.claude/skills/`.
 
 ```bash
-# From your project root
-mkdir -p .claude/skills
-cp -r /path/to/change-pilot .claude/skills/change-pilot
-
-# Or, if you want the project to pin a specific version, add as a submodule:
-git submodule add https://github.com/<your-org>/change-pilot.git .claude/skills/change-pilot
-git submodule update --init --recursive
+./install.sh --target=claude-code
 ```
 
-Commit `.gitmodules` and the submodule pointer. Team members run `git submodule update --init` after cloning.
+Verify with: invoke `/change-pilot` in any Claude Code session with a sample R&D change-point. Expected output is a single line in the form `title：description`.
 
-## Option C — Direct invocation in a session
+### OpenClaw
 
-If you don't want to install system-wide, paste the contents of `SKILL.md` into a Claude Code session and ask Claude to follow its instructions for the current task. The skill is self-contained — no scripts, no dependencies.
+OpenClaw auto-discovers skills from enterprise > personal > project layers. The default install path is `~/.openclaw/skills/`. If your OpenClaw setup uses a different personal-skill path, override with `--prefix`.
+
+```bash
+./install.sh --target=openclaw
+```
+
+Verify with: invoke the skill in OpenClaw with a sample R&D change-point and confirm the single-line customer-facing output.
+
+### DeepSeek Harness (DSH)
+
+DSH picks skills from four paths in priority order. The default install is at `./.dsh/skills/` (project scope, highest priority). For a personal global install, override with `--prefix=$HOME/.dsh/skills/`.
+
+```bash
+./install.sh --target=dsh
+```
+
+Verify with: list skills via DSH and confirm `change-pilot` appears, then invoke it with a sample R&D change-point.
 
 ## Verifying the install
 
-In any Claude Code session, type:
+Run the smoke test:
+
+```bash
+./tests/install-smoke.sh
+```
+
+Expected: eight `PASS:` lines, no `FAIL:`.
+
+In a live harness session, type:
 
 ```
 /change-pilot 修复扫码过程中图像数据未及时清理的问题，提升扫码稳定性。
 ```
 
-The expected default output is a single line:
+Expected default output (single line, full-width Chinese colon):
 
 ```
 扫码功能优化：优化扫码功能，提升扫码稳定性。
 ```
 
-If you see that line, the skill is wired up correctly. If Claude produces verbose analysis or JSON, the skill is not loaded — re-check the path above.
-
-## Uninstall
-
-User-level: `rm -rf ~/.claude/skills/change-pilot`
-
-Project-level: remove the `.claude/skills/change-pilot/` directory from the project.
-
-Submodule: `git submodule deinit -f .claude/skills/change-pilot && git rm -f .claude/skills/change-pilot && rm -rf .git/modules/.claude/skills/change-pilot`
+If you see that line, the skill is wired up correctly. If the harness produces verbose analysis or JSON, the skill is not loaded — re-check the install path.
 
 ## Updating
 
 ```bash
-cd ~/.claude/skills/change-pilot   # or wherever you cloned it
-git pull
+./install.sh --target=<harness> --force    # re-install with backup of existing
 ```
 
-For project-level submodules: `git submodule update --remote .claude/skills/change-pilot` from the project root.
+`--force` moves the existing install to `<path>.bak.<timestamp>` before installing fresh.
+
+## Uninstall
+
+```bash
+rm -rf ~/.claude/skills/change-pilot
+rm -rf ~/.openclaw/skills/change-pilot
+rm -rf ./.dsh/skills/change-pilot
+```
+
+Adjust paths if you used `--prefix` to override.
+
+## Frontmatter
+
+The skill ships with a minimal frontmatter (`name: change-pilot` + `description:`) that all three SKILL.md-format harnesses accept. DSH-specific `whenToUse` and other optional fields are intentionally omitted — the `description` already covers trigger conditions for all targets.
