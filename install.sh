@@ -43,8 +43,8 @@ parse_args() {
     esac
     shift
   done
-  [[ -z "$TARGET" ]] && { usage; die "--target is required"; }
-  [[ "$MODE" != "copy" && "$MODE" != "symlink" ]] && die "--mode must be copy or symlink"
+  [[ -n "$TARGET" ]] || { usage; die "--target is required"; }
+  [[ "$MODE" == "copy" || "$MODE" == "symlink" ]] || die "--mode must be copy or symlink"
 }
 
 resolve_default_prefix() {
