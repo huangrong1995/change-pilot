@@ -80,4 +80,27 @@ if "$INSTALL_SH" >/dev/null 2>&1; then
 fi
 
 pass "exit-code regression assertions"
+
+# Task 8: error cases rejected with non-zero exit
+mkdir -p "$TMP/no-force/SKILL.md"
+if "$INSTALL_SH" --target=claude-code --prefix="$TMP/no-force" --mode=copy 2>/dev/null; then
+  fail "no-force overwrite should have failed"
+fi
+
+# unknown target fails
+if "$INSTALL_SH" --target=bogus --prefix="$TMP/bogus2" 2>/dev/null; then
+  fail "unknown target should have failed"
+fi
+
+# missing --target fails
+if "$INSTALL_SH" --mode=copy --prefix="$TMP/missing-target" 2>/dev/null; then
+  fail "missing --target should have failed"
+fi
+
+# invalid mode fails
+if "$INSTALL_SH" --target=claude-code --mode=banana --prefix="$TMP/bad-mode" 2>/dev/null; then
+  fail "invalid --mode should have failed"
+fi
+
+pass "error cases rejected with non-zero exit"
 pass "help covers all targets"
