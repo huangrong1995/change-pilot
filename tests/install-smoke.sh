@@ -54,6 +54,13 @@ grep -q '^name: change-pilot' "$TMP/dsh-content/SKILL.md"      || fail "dsh: fro
 
 pass "dsh install copies SKILL.md and all subdirs"
 
+# Task 6: symlink mode creates symlinks, not copies
+"$INSTALL_SH" --target=claude-code --prefix="$TMP/sym" --mode=symlink --force >/dev/null
+[[ -L "$TMP/sym/SKILL.md" ]]    || fail "symlink mode: SKILL.md should be a symlink"
+[[ -L "$TMP/sym/prompts" ]]     || fail "symlink mode: prompts should be a symlink"
+
+pass "symlink mode creates symlinks"
+
 if "$INSTALL_SH" --target=bogus --prefix="$TMP/bogus" >/dev/null 2>&1; then
   fail "unknown target should exit non-zero"
 fi
