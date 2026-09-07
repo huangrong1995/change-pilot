@@ -6,6 +6,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALL_SH="$REPO_ROOT/install.sh"
 
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
 fail() { echo "FAIL: $*" >&2; exit 1; }
 pass() { echo "PASS: $*"; }
 
@@ -18,15 +21,16 @@ echo "$HELP" | grep -qE '^  openclaw  '    || fail "help missing openclaw row"
 echo "$HELP" | grep -qE '^  dsh  '         || fail "help missing dsh row"
 echo "$HELP" | grep -qE '^  all  '         || fail "help missing all row"
 
-# Exit-code regression assertions (catch set -e / validation bugs)
-"$INSTALL_SH" --target=claude-code >/dev/null 2>&1 || fail "valid target=claude-code should exit 0"
-"$INSTALL_SH" --target=openclaw --mode=copy >/dev/null 2>&1 || fail "valid target=openclaw + mode=copy should exit 0"
-"$INSTALL_SH" --target=dsh --mode=symlink --force >/dev/null 2>&1 || fail "valid target=dsh + force should exit 0"
+# Exit-code regression assertions (catch set -e / validation bugs).
+# Use --prefix into a temp dir so assertions don't pollute real ~/.claude/ etc.
+"$INSTALL_SH" --target=claude-code --prefix="$TMP/cc" --force >/dev/null 2>&1 || fail "valid target=claude-code should exit 0"
+"$INSTALL_SH" --target=openclaw    --prefix="$TMP/oc" --mode=copy --force >/dev/null 2>&1 || fail "valid target=openclaw + mode=copy should exit 0"
+"$INSTALL_SH" --target=dsh         --prefix="$TMP/dsh" --mode=symlink --force >/dev/null 2>&1 || fail "valid target=dsh + force should exit 0"
 
-if "$INSTALL_SH" --target=bogus >/dev/null 2>&1; then
+if "$INSTALL_SH" --target=bogus --prefix="$TMP/bogus" >/dev/null 2>&1; then
   fail "unknown target should exit non-zero"
 fi
-if "$INSTALL_SH" --mode=banana --target=claude-code >/dev/null 2>&1; then
+if "$INSTALL_SH" --mode=banana --target=claude-code --prefix="$TMP/banana" >/dev/null 2>&1; then
   fail "invalid --mode should exit non-zero"
 fi
 if "$INSTALL_SH" >/dev/null 2>&1; then

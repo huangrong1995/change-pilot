@@ -56,7 +56,6 @@ resolve_default_prefix() {
     claude-code) echo "$HOME/.claude/skills/$SKILL_NAME" ;;
     openclaw)    echo "$HOME/.openclaw/skills/$SKILL_NAME" ;;
     dsh)         echo "./.dsh/skills/$SKILL_NAME" ;;
-    all)         die "--target=all not yet implemented in this version of install.sh" ;;
     *) die "unknown target: $1" ;;
   esac
 }
