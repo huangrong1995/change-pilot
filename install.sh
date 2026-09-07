@@ -44,6 +44,10 @@ parse_args() {
     shift
   done
   [[ -n "$TARGET" ]] || { usage; die "--target is required"; }
+  case "$TARGET" in
+    claude-code|openclaw|dsh|all) ;;
+    *) usage; die "unknown target: $TARGET (valid: claude-code, openclaw, dsh, all)" ;;
+  esac
   [[ "$MODE" == "copy" || "$MODE" == "symlink" ]] || die "--mode must be copy or symlink"
 }
 
@@ -52,6 +56,7 @@ resolve_default_prefix() {
     claude-code) echo "$HOME/.claude/skills/$SKILL_NAME" ;;
     openclaw)    echo "$HOME/.openclaw/skills/$SKILL_NAME" ;;
     dsh)         echo "./.dsh/skills/$SKILL_NAME" ;;
+    all)         die "--target=all not yet implemented in this version of install.sh" ;;
     *) die "unknown target: $1" ;;
   esac
 }
@@ -59,7 +64,9 @@ resolve_default_prefix() {
 main() {
   parse_args "$@"
   local target_dir
-  if [[ -n "$PREFIX" ]]; then
+  if [[ "$TARGET" == "all" ]]; then
+    target_dir="$(resolve_default_prefix "$TARGET")"
+  elif [[ -n "$PREFIX" ]]; then
     target_dir="$PREFIX"
   else
     target_dir="$(resolve_default_prefix "$TARGET")"
