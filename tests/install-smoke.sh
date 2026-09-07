@@ -61,6 +61,14 @@ pass "dsh install copies SKILL.md and all subdirs"
 
 pass "symlink mode creates symlinks"
 
+# Task 7: --force backups existing install before overwriting
+mkdir -p "$TMP/existing/SKILL.md"
+"$INSTALL_SH" --target=claude-code --prefix="$TMP/existing" --mode=copy --force >/dev/null
+ls -d "$TMP/existing".bak.* >/dev/null 2>&1 || fail "--force did not create .bak.<ts> backup"
+[[ -f "$TMP/existing/SKILL.md" ]] || fail "--force: new install missing SKILL.md"
+
+pass "--force backups existing install"
+
 if "$INSTALL_SH" --target=bogus --prefix="$TMP/bogus" >/dev/null 2>&1; then
   fail "unknown target should exit non-zero"
 fi
