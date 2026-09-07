@@ -46,6 +46,14 @@ grep -q '^name: change-pilot' "$TMP/openclaw/SKILL.md"      || fail "openclaw: f
 
 pass "openclaw install copies SKILL.md and all subdirs"
 
+# Task 5: dsh install content assertions
+"$INSTALL_SH" --target=dsh --prefix="$TMP/dsh-content" --mode=copy --force >/dev/null
+[[ -f "$TMP/dsh-content/SKILL.md" ]]                            || fail "dsh: SKILL.md missing"
+[[ -d "$TMP/dsh-content/rules" ]]                               || fail "dsh: rules/ missing"
+grep -q '^name: change-pilot' "$TMP/dsh-content/SKILL.md"      || fail "dsh: frontmatter name missing"
+
+pass "dsh install copies SKILL.md and all subdirs"
+
 if "$INSTALL_SH" --target=bogus --prefix="$TMP/bogus" >/dev/null 2>&1; then
   fail "unknown target should exit non-zero"
 fi
