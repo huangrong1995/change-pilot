@@ -2,7 +2,8 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from server.app.auth import install_auth_exception_handler, require_bearer_token, set_expected_token
+from server.app.auth import require_bearer_token, set_expected_token
+from server.app.errors import install_error_handlers
 
 
 @pytest.fixture(autouse=True)
@@ -18,7 +19,7 @@ def _make_app() -> FastAPI:
     def protected(_: str = Depends(require_bearer_token)):
         return {"ok": True}
 
-    install_auth_exception_handler(app)
+    install_error_handlers(app)
     return app
 
 

@@ -2,15 +2,15 @@
 
 The Server has a single expected token configured at startup via
 ``set_expected_token``. ``require_bearer_token`` raises ``AuthError`` when
-the header is missing or doesn't match; ``AuthError`` is mapped to an
-``UNAUTHORIZED`` HTTP 401 by the exception handler registered in
-``server.app.auth`` via ``install_auth_exception_handler``.
+the header is missing or doesn't match; ``AuthError`` maps to an
+``UNAUTHORIZED`` HTTP 401 through ``install_error_handlers`` in
+``server.app.errors``.
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, Header
-from fastapi.requests import Request
-from fastapi.responses import JSONResponse
+from fastapi import Header
+
+from server.app.errors import Unauthorized
 
 _expected_token: str = ""
 
@@ -21,7 +21,7 @@ def set_expected_token(token: str) -> None:
     _expected_token = token
 
 
-class AuthError(Exception):
+class AuthError(Unauthorized):
     """Raised when authentication fails. Mapped to HTTP 401."""
 
 
@@ -31,12 +31,3 @@ def require_bearer_token(authorization: str | None = Header(default=None)) -> No
     presented = authorization[len("Bearer "):].strip()
     if not _expected_token or presented != _expected_token:
         raise AuthError("invalid token")
-
-
-def install_auth_exception_handler(app: FastAPI) -> None:
-    @app.exception_handler(AuthError)
-    async def _auth_handler(_request: Request, exc: AuthError):
-        return JSONResponse(
-            status_code=401,
-            content={"success": False, "error": {"code": "UNAUTHORIZED", "message": str(exc)}},
-        )
