@@ -41,6 +41,7 @@ def test_wrong_token_returns_401():
 
     assert r.status_code == 401
     assert r.json()["error"]["code"] == "UNAUTHORIZED"
+    assert r.json()["error"]["message"] == "invalid token"
 
 
 def test_malformed_header_returns_401():
@@ -51,6 +52,18 @@ def test_malformed_header_returns_401():
 
     assert r.status_code == 401
     assert r.json()["error"]["code"] == "UNAUTHORIZED"
+    assert r.json()["error"]["message"] == "missing or malformed Authorization header"
+
+
+def test_empty_configured_token_rejects_any_bearer():
+    set_expected_token("")
+    client = TestClient(_make_app())
+
+    r = client.get("/protected", headers={"Authorization": "Bearer some-token"})
+
+    assert r.status_code == 401
+    assert r.json()["error"]["code"] == "UNAUTHORIZED"
+    assert r.json()["error"]["message"] == "invalid token"
 
 
 def test_correct_token_returns_200():
@@ -58,6 +71,16 @@ def test_correct_token_returns_200():
     client = TestClient(_make_app())
 
     r = client.get("/protected", headers={"Authorization": "Bearer real-token"})
+
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+
+
+def test_token_whitespace_is_stripped():
+    set_expected_token("real-token")
+    client = TestClient(_make_app())
+
+    r = client.get("/protected", headers={"Authorization": "Bearer   real-token  "})
 
     assert r.status_code == 200
     assert r.json()["ok"] is True
