@@ -20,7 +20,7 @@ from fastapi import status
 from server.app.agent.runner import ClaudeRunner
 from server.app.auth import require_bearer_token
 from server.app.config import load_settings
-from server.app.errors import AgentOutputInvalid, ServerBusy
+from server.app.errors import AgentFailed, AgentOutputInvalid, AgentStartFailed, AgentTimeout, ServerBusy
 from server.app.logging import RequestContext, get_logger
 from server.app.models.request import ChangePilotRequest
 from server.app.models.response import (
@@ -72,6 +72,20 @@ async def post_change_pilot(
                 context=context_dict,
                 mode=body.mode,
             )
+        except (AgentTimeout, AgentStartFailed, AgentFailed) as exc:
+            duration_ms = int((time.monotonic() - started) * 1000)
+            log.exception("change-pilot failed", extra={
+                "operation": "change-pilot",
+                "status": "failed",
+                "duration_ms": duration_ms,
+                "error_class": exc.__class__.__name__,
+            })
+            safe_messages = {
+                AgentTimeout: "agent request timed out",
+                AgentStartFailed: "agent could not be started",
+                AgentFailed: "agent execution failed",
+            }
+            raise exc.__class__(safe_messages[type(exc)]) from exc
         except Exception as exc:
             duration_ms = int((time.monotonic() - started) * 1000)
             log.exception("change-pilot failed", extra={
@@ -101,7 +115,7 @@ async def post_change_pilot(
                 "status": "schema_rejected",
                 "duration_ms": duration_ms,
             })
-            raise AgentOutputInvalid(str(exc)) from exc
+            raise AgentOutputInvalid("agent output failed validation") from exc
 
         # Build the customer-facing single-line output (default mode).
         customer_line = build_customer_output_line(run_result.title, run_result.description)
@@ -117,7 +131,7 @@ async def post_change_pilot(
                 "status": "sensitive_leak",
                 "duration_ms": duration_ms,
             })
-            raise AgentOutputInvalid(str(exc)) from exc
+            raise AgentOutputInvalid("agent output failed validation") from exc
 
         duration_ms = int((time.monotonic() - started) * 1000)
         log.info("change-pilot completed", extra={
