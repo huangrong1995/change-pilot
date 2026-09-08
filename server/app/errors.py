@@ -15,13 +15,14 @@ Error codes (per spec section 27):
   INTERNAL_ERROR.
 """
 from __future__ import annotations
-import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from server.app.logging import get_logger
 
-logger = logging.getLogger(__name__)
+
+logger = get_logger()
 
 
 class ChangePilotError(Exception):

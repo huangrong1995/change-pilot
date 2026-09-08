@@ -24,7 +24,7 @@ _FORMAT = "%(asctime)s %(levelname)s request_id=%(request_id)s %(message)s"
 
 
 def configure(level: str = "INFO") -> None:
-    """Idempotent root configuration for the ``change_pilot`` logger."""
+    """Idempotently configure the ``change_pilot`` logger."""
     log = logging.getLogger("change_pilot")
     if log.handlers:
         return

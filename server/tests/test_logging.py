@@ -35,6 +35,19 @@ def test_log_line_contains_request_id_and_no_raw_text():
         log.removeHandler(handler)
 
 
+def test_secret_in_extra_never_rendered():
+    log = get_logger()
+    handler = _captured_records(log)
+    try:
+        with RequestContext(request_id="req_x"):
+            log.info("processed", extra={"operation": "transform", "raw_text": "secret-internals-BUG-12345"})
+        formatted = handler.format(handler.records[0])
+        assert "secret-internals-BUG-12345" not in formatted
+        assert "req_x" in formatted
+    finally:
+        log.removeHandler(handler)
+
+
 def test_get_logger_returns_named_logger():
     log = get_logger()
     assert log.name == "change_pilot"
