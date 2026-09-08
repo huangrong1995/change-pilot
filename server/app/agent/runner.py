@@ -102,10 +102,14 @@ def _default_subprocess_run(args: list[str], stdin: str) -> tuple[int, str, str]
     proc = subprocess.run(args, input=stdin, capture_output=True, text=True, timeout=None, check=False)
     return proc.returncode, proc.stdout, proc.stderr
 
-async def _async_subprocess_run(args: list[str], stdin: str) -> tuple[int, str, str]:
+async def _async_subprocess_run(
+    args: list[str], stdin: str, timeout_seconds: float | None = None
+) -> tuple[int, str, str]:
     proc = await asyncio.create_subprocess_exec(*args, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     try:
-        stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(stdin.encode("utf-8")), timeout=None)
+        stdout_b, stderr_b = await asyncio.wait_for(
+            proc.communicate(stdin.encode("utf-8")), timeout=timeout_seconds
+        )
     except asyncio.TimeoutError as exc:
         proc.kill()
         await proc.wait()
@@ -140,7 +144,14 @@ class ClaudeRunner:
     async def run_async(self, raw_text: str, context: dict | None, mode: str) -> ClaudeRunResult:
         prompt = build_system_prompt(self.skill_dir, raw_text, context)
         args = self._build_args(prompt)
-        exit_code, stdout, stderr = await _async_subprocess_run(args, prompt)
+        if self._command_override:
+            exit_code, stdout, stderr = await asyncio.to_thread(
+                self._command_override, args, prompt
+            )
+        else:
+            exit_code, stdout, stderr = await _async_subprocess_run(
+                args, prompt, self.timeout_seconds
+            )
         if exit_code != 0:
             raise AgentFailed(f"claude exited {exit_code}: {stderr.strip()[:500]}")
         parsed = _parse_claude_result(stdout)
