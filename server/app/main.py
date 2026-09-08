@@ -33,6 +33,14 @@ def create_app() -> FastAPI:
         from fastapi.responses import JSONResponse
         cl = request.headers.get("content-length")
         transfer_encoding = request.headers.get("transfer-encoding")
+        if transfer_encoding:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": {
+                    "code": "INVALID_REQUEST",
+                    "message": "request body requires a valid Content-Length",
+                }},
+            )
         if cl is not None:
             try:
                 if int(cl) > settings.max_request_bytes:
@@ -51,14 +59,6 @@ def create_app() -> FastAPI:
                         "message": "invalid Content-Length header",
                     }},
                 )
-        elif transfer_encoding:
-            return JSONResponse(
-                status_code=400,
-                content={"success": False, "error": {
-                    "code": "INVALID_REQUEST",
-                    "message": "request body requires a valid Content-Length",
-                }},
-            )
         return await call_next(request)
 
     @app.on_event("startup")
