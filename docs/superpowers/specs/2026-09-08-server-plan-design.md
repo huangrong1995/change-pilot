@@ -7,10 +7,12 @@
 > **Transferred from:** `archive/doc/Server方案.md` on 2026-09-08. Original Chinese title `Server方案.md` is preserved as the document's subject (Change Pilot Agent Server). Content below this preamble is the original design proposal, unchanged except for this preamble insertion.
 >
 > **Note on hygiene:** The transferred content has not been edited for typo fixes or wording changes — original wording is preserved to keep the design proposal faithful to its authorship. Any typo or wording corrections, if needed, should be tracked as a separate follow-up commit.
+>
+> **Note on formatting:** A structural formatting pass was applied after transfer to promote numbered section titles (e.g. `1. 项目最终定位`) to Markdown `##` headings, sub-sections to `###`, phase labels to `####`, and to wrap ASCII tree diagrams and JSON code blocks in fenced code blocks. The text content was not changed.
 
 ---
 
-. 项目最终定位
+## 1. 项目最终定位
 
 项目名称继续：
 
@@ -22,6 +24,7 @@ Change Pilot Agent Server
 
 整体关系：
 
+```
                     ┌─────────────────────────┐
                     │       调用方             │
                     │                         │
@@ -32,9 +35,13 @@ Change Pilot Agent Server
                     │ Python / Shell / curl   │
                     └────────────┬────────────┘
                                  │
+```
+
                           HTTP / SSE
                                  │
                                  ▼
+
+```
                   ┌──────────────────────────┐
                   │  Change Pilot Server     │
                   │                          │
@@ -44,7 +51,11 @@ Change Pilot Agent Server
                   │  Agent Manager            │
                   └────────────┬─────────────┘
                                │
+```
+
                                ▼
+
+```
                   ┌──────────────────────────┐
                   │      Claude Code          │
                   │      Agent Runtime        │
@@ -52,7 +63,11 @@ Change Pilot Agent Server
                   │  change-pilot Skill      │
                   └────────────┬─────────────┘
                                │
+```
+
                                ▼
+
+```
                   ┌──────────────────────────┐
                   │     Change Pilot Domain   │
                   │                          │
@@ -62,6 +77,7 @@ Change Pilot Agent Server
                   │ Express                  │
                   │ Validate                 │
                   └──────────────────────────┘
+```
 
 这里有一个原则：
 
@@ -69,7 +85,7 @@ Server 不实现 Change Pilot 规则，Skill 才是唯一业务规则来源。
 
 你的现有 Skill 已经定义了“保留业务事实、隐藏内部细节、技术抽象、不夸大、变化类型识别、多变更拆分”等核心行为，因此 Server 只是把它服务化。
 
-2. 为什么采用这个架构
+## 2. 为什么采用这个架构
 
 你最初提出的是：
 
@@ -114,11 +130,11 @@ Claude Code：
 
 Claude Code 的程序化 CLI 能力适合这个方案；同时 Anthropic 当前也已经提供了更完整的 Agent/SDK 体系，因此我们把 Claude 调用封装在 AgentRunner 后面，未来切换实现不会影响 REST API。
 
-3. V1 的核心原则
+## 3. V1 的核心原则
 
 整个项目严格遵循：
 
-原则 1：Skill 是唯一业务真相
+### 原则 1：Skill 是唯一业务真相
 rules/
 prompts/
 schemas/
@@ -128,7 +144,7 @@ SKILL.md
 
 决定 Change Pilot 的行为。
 
-原则 2：Server 不理解业务
+### 原则 2：Server 不理解业务
 
 Server 不应该出现：
 
@@ -164,7 +180,7 @@ Change Pilot 能力。
 
 Claude Code。
 
-原则 4：默认无状态，Session 是高级能力
+### 原则 4：默认无状态，Session 是高级能力
 
 Change Pilot 本质：
 
@@ -186,11 +202,13 @@ response B
 
 互不影响。
 
-4. 仓库最终结构
+## 4. 仓库最终结构
 
 我建议 V1 直接采用：
 
 change-pilot/
+
+```
 │
 ├── SKILL.md
 ├── README.md
@@ -268,12 +286,13 @@ change-pilot/
     ├── start-server.sh
     ├── stop-server.sh
     └── health-check.sh
+```
 
 V1 不上 Docker、不上 Redis、不上 PostgreSQL、不上 MQ。
 
 先把核心链路跑通。
 
-5. Server 技术栈
+## 5. Server 技术栈
 
 我建议：
 
@@ -307,7 +326,7 @@ server/data/change-pilot.db
 
 不需要一开始引入 PostgreSQL。
 
-6. API 设计
+## 6. API 设计
 
 最终 V1 只开放：
 
@@ -339,22 +358,26 @@ Content-Type: application/json
 
 Body：
 
+```
 {
   "raw_text": "修复扫码过程中图像数据未及时清理的问题，提升扫码稳定性。"
 }
+```
 
 返回：
 
+```
 {
   "success": true,
   "request_id": "req_01J...",
   "customer_output": "扫码功能优化：优化扫码功能，提升扫码稳定性。",
   "processing_time_ms": 5230
 }
+```
 
 这应该是整个服务最常用的接口。
 
-8. 支持 context
+## 8. 支持 context
 
 你当前的 input.schema.json 已经设计了：
 
@@ -364,6 +387,7 @@ mode
 
 因此 API 保持一致：
 
+```
 {
   "raw_text": "升级扫码相关基础组件",
   "context": {
@@ -373,6 +397,7 @@ mode
   },
   "mode": "default"
 }
+```
 
 但是有一点：
 
@@ -380,7 +405,7 @@ context 不直接覆盖 Skill 规则。
 
 它只是辅助信息。
 
-9. Debug 模式
+## 9. Debug 模式
 
 你现有设计已经定义：
 
@@ -393,6 +418,7 @@ Default：
 
 Debug：
 
+```
 {
   "customer_output": "...",
   "analysis": {
@@ -406,6 +432,7 @@ Debug：
     "passed": true
   }
 }
+```
 
 你的仓库目前明确规定 Debug 输出用于 harness/test，而不是最终客户。
 
@@ -428,9 +455,11 @@ Regression Test
 
 请求：
 
+```
 {
   "raw_text": "优化扫码功能..."
 }
+```
 
 返回：
 
@@ -447,8 +476,12 @@ event: validating
 data: {}
 
 event: completed
+
+```
 data: {
   "customer_output":"扫码功能优化：优化扫码功能，提升扫码稳定性。"
+```
+
 }
 
 注意：
@@ -472,10 +505,12 @@ Claude thinking...
 
 例如：
 
+```
 {
   "session_id": "cp_sess_001",
   "message": "第一条描述太技术化，重新优化"
 }
+```
 
 它允许：
 
@@ -514,11 +549,13 @@ metadata
 
 例如：
 
+```
 {
   "id": "cp_sess_001",
   "claude_session_id": "claude_xxx",
   "status": "idle"
 }
+```
 
 外部永远只看到：
 
@@ -528,6 +565,8 @@ cp_sess_001
 一个 HTTP 请求对应一个 Task。
 
 Task
+
+```
 │
 ├── task_id
 ├── session_id
@@ -537,6 +576,7 @@ Task
 ├── completed_at
 ├── result
 └── error
+```
 
 状态：
 
@@ -562,6 +602,8 @@ timeout
 核心代码职责：
 
 AgentManager
+
+```
 │
 ├── execute()
 ├── stream()
@@ -569,6 +611,7 @@ AgentManager
 ├── resume_session()
 ├── terminate()
 └── cleanup()
+```
 
 它不关心：
 
@@ -589,11 +632,14 @@ AgentManager
        │
        ▼
 ClaudeRunner
+
+```
        │
        ├── start()
        ├── resume()
        ├── stream()
        └── parse()
+```
 
 这样以后如果换成 Claude Agent SDK：
 
@@ -609,7 +655,7 @@ ClaudeRunnerSDK
 
 Anthropic 当前已经提供面向 Agent 的平台和 SDK 能力，因此这个抽象层非常值得保留。
 
-16. V1 Claude 调用策略
+## 16. V1 Claude 调用策略
 
 第一版：
 
@@ -636,7 +682,7 @@ Claude Task 生命周期：
 
 实际上非常合适。
 
-17. Session 场景
+## 17. Session 场景
 
 如果：
 
@@ -662,7 +708,7 @@ claude --resume xxx -p
 
 这样可以恢复上下文。
 
-18. 为什么不要所有请求都 Session
+## 18. 为什么不要所有请求都 Session
 
 因为 Change Pilot 的业务逻辑本来就是：
 
@@ -707,11 +753,13 @@ stateful
 
 这个设计非常重要。
 
-19. Agent Workspace
+## 19. Agent Workspace
 
 Server 为每一个任务提供独立工作目录：
 
 /var/lib/change-pilot/
+
+```
 │
 ├── sessions/
 │   ├── sess_001/
@@ -719,6 +767,7 @@ Server 为每一个任务提供独立工作目录：
 │   └── sess_003/
 │
 └── tmp/
+```
 
 但是 V1 Change Pilot：
 
@@ -742,12 +791,15 @@ Server 启动前：
 Skill：
 
 /opt/change-pilot/
+
+```
 ├── SKILL.md
 ├── rules/
 ├── prompts/
 ├── schemas/
 ├── examples/
 └── tests/
+```
 
 然后：
 
@@ -767,22 +819,30 @@ Server Claude Code
 
 确保规则只有一份。
 
-21. /change-pilot 必须继续保留
+## 21. /change-pilot 必须继续保留
 
 这是一个非常好的设计。
 
 最终：
 
                  Change Pilot
+
+```
                       │
           ┌───────────┴───────────┐
           │                       │
+```
+
           ▼                       ▼
     Claude Code               REST API
           │                       │
  /change-pilot              /v1/change-pilot
+
+```
           │                       │
           └───────────┬───────────┘
+```
+
                       ▼
                 同一个 Skill
 
@@ -797,7 +857,7 @@ POST /v1/change-pilot
 
 三者结果一致。
 
-22. CLAUDE.md
+## 22. CLAUDE.md
 
 Server 的 Agent Runtime 可以提供：
 
@@ -825,7 +885,7 @@ core-rules.md
 
 三处维护同样规则，迟早会冲突。
 
-23. 权限
+## 23. 权限
 
 Change Pilot V1 原则：
 
@@ -847,7 +907,7 @@ Git commit
 
 如果 Claude Code CLI 的版本支持对应工具限制参数，则在 ClaudeRunner 统一设置；不要让 API 请求自己传任意工具权限。
 
-24. API 鉴权
+## 24. API 鉴权
 
 V1：
 
@@ -871,6 +931,8 @@ jenkins-token
 feishu-token
 admin-token
 25. 配置文件
+
+```
 server:
   host: 0.0.0.0
   port: 8080
@@ -888,6 +950,7 @@ security:
 
 logging:
   level: INFO
+```
 
 敏感配置：
 
@@ -895,7 +958,7 @@ CHANGE_PILOT_API_TOKEN
 
 不要放 YAML。
 
-26. 超时
+## 26. 超时
 
 默认：
 
@@ -909,6 +972,7 @@ timeout
 
 API：
 
+```
 {
   "success": false,
   "error": {
@@ -916,7 +980,9 @@ API：
     "message": "变更点处理超时，请稍后重试。"
   }
 }
-27. 错误码
+```
+
+## 27. 错误码
 
 统一：
 
@@ -962,7 +1028,7 @@ commit
 
 全部原文打日志。
 
-29. 可观测性
+## 29. 可观测性
 
 V1 不需要 Prometheus。
 
@@ -990,10 +1056,12 @@ Task Queue
 
 例如：
 
+```
 Task A → running
 Task B → running
 Task C → pending
 Task D → pending
+```
 
 不允许：
 
@@ -1003,16 +1071,19 @@ Task D → pending
 
 否则机器和 API 很快就炸。
 
-31. 服务器部署
+## 31. 服务器部署
 
 推荐：
 
 Ubuntu
+
+```
    │
    ├── Python 3.11+
    ├── Node.js
    ├── Claude Code
    └── change-pilot
+```
 
 目录：
 
@@ -1043,6 +1114,8 @@ systemd
   │
   ▼
 change-pilot-server
+
+```
   │
   ├── Load config
   ├── Validate Claude CLI
@@ -1050,6 +1123,7 @@ change-pilot-server
   ├── Init SQLite
   ├── Init Agent Manager
   └── Start FastAPI
+```
 
 启动时检查：
 
@@ -1064,11 +1138,12 @@ systemd startup failed
 
 不要让服务启动后才发现 Claude 不存在。
 
-34. Health API
+## 34. Health API
 GET /health
 
 返回：
 
+```
 {
   "status": "ok",
   "version": "1.0.0",
@@ -1079,6 +1154,7 @@ GET /health
     "available": true
   }
 }
+```
 
 以后 Jenkins 可以直接：
 
@@ -1115,10 +1191,11 @@ request_id 是多少？
 
 马上定位。
 
-36. Change Pilot API 的最终 Schema
+## 36. Change Pilot API 的最终 Schema
 
 建议：
 
+```
 {
   "raw_text": "string",
   "context": {
@@ -1128,6 +1205,7 @@ request_id 是多少？
   },
   "mode": "default"
 }
+```
 
 其中：
 
@@ -1143,15 +1221,18 @@ debug
 
 Default：
 
+```
 {
   "success": true,
   "request_id": "req_xxx",
   "customer_output": "扫码功能优化：优化扫码功能，提升扫码稳定性。",
   "processing_time_ms": 5320
 }
+```
 
 Debug：
 
+```
 {
   "success": true,
   "request_id": "req_xxx",
@@ -1160,10 +1241,11 @@ Debug：
   "validation": {},
   "processing_time_ms": 5320
 }
+```
 
 这个设计直接兼容你现有 output.schema.json 的业务结构。
 
-38. 多变更
+## 38. 多变更
 
 你当前 Skill 已经支持：
 
@@ -1179,17 +1261,19 @@ Debug：
 
 API 不需要特殊处理：
 
+```
 {
   "raw_text": "1.... 2.... 3...."
 }
+```
 
 全部交给 Skill。
 
-39. 最关键的安全边界
+## 39. 最关键的安全边界
 
 我建议明确三道边界。
 
-第一层：API
+### 第一层：API
 Authentication
 Request Size
 Rate Limit
@@ -1241,7 +1325,7 @@ sensitive-patterns.yaml
 
 你现在项目已经有这两个机制，因此直接复用。
 
-41. 最终业务 Pipeline
+## 41. 最终业务 Pipeline
 
 完整变成：
 
@@ -1255,12 +1339,20 @@ sensitive-patterns.yaml
                         │
                         ▼
                  Change Pilot
+
+```
                         │
           ┌─────────────┴─────────────┐
+```
+
           ▼                           ▼
       Understand                  Classify
+
+```
           │                           │
           └─────────────┬─────────────┘
+```
+
                         ▼
                      Abstract
                         │
@@ -1282,7 +1374,7 @@ sensitive-patterns.yaml
 
 你的现有 Skill 已经把核心 5 阶段定义清楚了，这部分无需重做。
 
-42. V1 明确不做什么
+## 42. V1 明确不做什么
 
 这次一定要控制住范围。
 
@@ -1306,34 +1398,50 @@ sensitive-patterns.yaml
 
 你当前仓库也明确把 Git、RAG、风险分析、Jenkins、自动代码分析等列为 V1 out-of-scope。
 
-43. V1.1
+## 43. V1.1
 
 V1 跑稳定之后：
 
 V1.1
+
+```
 ├── SSE
 ├── Task Queue
 ├── Session
 ├── Prometheus
 └── API Token Management
+```
+
 44. V2
 
 然后才进入真正的企业 Agent：
 
                     Change Pilot
+
+```
                          │
               ┌──────────┼──────────┐
+```
+
               ▼          ▼          ▼
              Git       Jira       Jenkins
+
+```
               │          │          │
               └──────────┼──────────┘
+```
+
                          ▼
                     Context Builder
                          │
                          ▼
                     Change Agent
+
+```
                          │
                   ┌──────┴──────┐
+```
+
                   ▼             ▼
               Analysis      Customer Output
 
@@ -1347,14 +1455,18 @@ Jira
 
 Anthropic 当前的 Agent/MCP 能力也适合后续把外部工具接入 Agent，而不是 V1 就把这些全部塞进去。
 
-45. V3
+## 45. V3
 
 最终可以成为：
 
                    Change Pilot Platform
+
+```
                             │
         ┌───────────────────┼──────────────────┐
         │                   │                  │
+```
+
         ▼                   ▼                  ▼
  Change Extraction     Risk Analysis      Code Analysis
         │                   │                  │
@@ -1367,17 +1479,20 @@ Anthropic 当前的 Agent/MCP 能力也适合后续把外部工具接入 Agent�
 
 但现在不要做。
 
-46. 开发顺序
+## 46. 开发顺序
 
 我建议严格按照这个顺序开发。
 
-Phase 1：Server 骨架
+#### Phase 1：Server 骨架
 server/
+
+```
 ├── main.py
 ├── config.py
 ├── auth.py
 ├── models/
 └── api/
+```
 
 完成：
 
@@ -1413,7 +1528,7 @@ change-pilot
 
 这是第一个里程碑。
 
-Phase 4：Output Validation
+#### Phase 4：Output Validation
 
 加入：
 
@@ -1468,11 +1583,11 @@ REST API 测试
 
 这是非常重要的验收标准。
 
-47. V1 验收标准
+## 47. V1 验收标准
 
 我建议直接定义成下面这些。
 
-功能
+### 功能
  /change-pilot 继续可用
  /health 正常
  /v1/change-pilot 正常
@@ -1506,6 +1621,8 @@ Agent
 最终你服务器上就是：
 
 Ubuntu
+
+```
 │
 ├── Claude Code
 │
@@ -1518,6 +1635,7 @@ Ubuntu
 │
 └── systemd
     └── change-pilot.service
+```
 
 网络：
 
@@ -1543,25 +1661,36 @@ curl \
 
 得到：
 
+```
 {
   "success": true,
   "customer_output": "扫码功能优化：优化扫码功能，提升扫码稳定性。"
 }
-49. 我最终建议你采用的版本
+```
+
+## 49. 我最终建议你采用的版本
 
 把整个项目版本路线定死：
 
                     change-pilot
+
+```
                          │
                          │
               ┌──────────┴──────────┐
               │                     │
+```
+
            V1 Skill             V1 Server
               │                     │
       /change-pilot          REST / SSE
+
+```
               │                     │
               └──────────┬──────────┘
                          │
+```
+
                   Claude Code
                          │
                          ▼
@@ -1583,7 +1712,7 @@ V3.0
 
 研发变更智能分析平台
 
-50. 最重要的一点：不要现在改你的 Skill
+## 50. 最重要的一点：不要现在改你的 Skill
 
 你目前仓库的领域设计其实已经形成了一个比较好的边界：Skill 专注“研发技术语言 → 客户语言”转换，并且通过 10 条规则和 Regression Cases 固化行为。
 
@@ -1641,6 +1770,8 @@ Agent
 **下一步我建议直接开始 V1 实现，而不是继续做架构讨论。**具体第一批就落这 6 个文件：
 
 server/
+
+```
 ├── app/
 │   ├── main.py
 │   ├── config.py
@@ -1649,6 +1780,7 @@ server/
 │   ├── agent/runner.py
 │   └── api/change_pilot.py
 └── requirements.txt
+```
 
 先把这条链路打通：
 
