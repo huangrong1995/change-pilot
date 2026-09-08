@@ -6,6 +6,7 @@ import pytest
 from server.app.agent.runner import (
     ClaudeRunner,
     _async_subprocess_run,
+    _parse_claude_result,
     build_system_prompt,
 )
 from server.app.errors import AgentFailed, AgentStartFailed, AgentTimeout
@@ -31,6 +32,11 @@ def test_prompt_excludes_business_rules(tmp_path: Path):
 
     assert "保留业务事实" not in prompt
     assert "core rules" not in prompt
+
+
+def test_parse_accepts_direct_inner_skill_dict():
+    payload = {"customer_output": {"title": "direct", "description": "direct-description"}}
+    assert _parse_claude_result(json.dumps(payload)) == payload
 
 
 def test_command_override_parses_claude_result(tmp_path: Path):

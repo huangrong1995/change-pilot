@@ -76,7 +76,12 @@ def _parse_claude_result(stdout: str) -> dict[str, Any]:
         envelope = json.loads(stdout)
     except json.JSONDecodeError as exc:
         raise AgentFailed(f"agent returned non-JSON output: {exc}") from exc
+    if not isinstance(envelope, dict):
+        raise AgentFailed("agent output is not a JSON object")
     inner = envelope.get("result")
+    if inner is None:
+        # Direct inner skill payload (e.g. {"customer_output": {...}}).
+        return envelope
     if isinstance(inner, str):
         try:
             return json.loads(inner)
