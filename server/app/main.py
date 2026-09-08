@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from server.app import auth as auth_mod
 from server.app import errors as errors_mod
+from server.app.api import change_pilot as cp_router
 from server.app.api import health as health_router
 from server.app.config import load_settings
 from server.app.logging import get_logger
@@ -24,6 +25,23 @@ def create_app() -> FastAPI:
     auth_mod.set_expected_token(settings.api_token)
 
     app.include_router(health_router.router)
+    app.include_router(cp_router.router)
+
+    # Enforce max request size at the ASGI layer (defense-in-depth, see spec section 39).
+    @app.middleware("http")
+    async def _enforce_request_size(request, call_next):
+        cl = request.headers.get("content-length")
+        if cl is not None:
+            try:
+                if int(cl) > settings.max_request_bytes:
+                    from server.app.errors import RequestTooLarge
+                    raise RequestTooLarge(
+                        f"request body exceeds {settings.max_request_bytes} bytes"
+                    )
+            except ValueError:
+                from server.app.errors import InvalidRequest
+                raise InvalidRequest("invalid Content-Length header")
+        return await call_next(request)
 
     @app.on_event("startup")
     def _startup_log():
