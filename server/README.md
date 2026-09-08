@@ -25,6 +25,11 @@ curl -sS -X POST http://localhost:8080/v1/change-pilot \
   -d '{"raw_text":"修复扫码过程中图像数据未及时清理的问题，提升扫码稳定性。"}'
 ```
 
+## Status
+
+Phase 1–4 complete: end-to-end `POST /v1/change-pilot` works with mocked
+and real `claude -p`. See `docs/superpowers/plans/2026-09-08-server-implementation.md`.
+
 ## Tests
 
 ```bash
