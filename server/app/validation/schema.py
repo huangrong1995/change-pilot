@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import jsonschema
 from referencing import Registry
+from referencing.exceptions import Unresolvable
 
 
 class SchemaViolation(Exception):
@@ -53,5 +54,9 @@ def validate_against_output_schema(parsed: dict, schema_path: Path) -> None:
         raise SchemaViolation(f"output schema is not valid JSON at {schema_path}: {exc}") from exc
     try:
         jsonschema.validate(instance=parsed, schema=schema)
-    except (jsonschema.ValidationError, jsonschema.SchemaError) as exc:
+    except (
+        jsonschema.ValidationError,
+        jsonschema.SchemaError,
+        Unresolvable,
+    ) as exc:
         raise SchemaViolation(str(exc)) from exc

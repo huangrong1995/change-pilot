@@ -68,3 +68,12 @@ def test_validate_against_output_schema_unreadable_schema(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "read_text", raise_unreadable)
     with pytest.raises(SchemaViolation):
         validate_against_output_schema({"customer_output": {"description": "x"}}, schema_file)
+
+
+def test_validate_against_output_schema_unresolvable_ref(tmp_path):
+    schema_file = tmp_path / "output.schema.json"
+    schema_file.write_text(
+        '{"type":"object","properties":{"x":{"$ref":"#/definitions/missing"}}}'
+    )
+    with pytest.raises(SchemaViolation):
+        validate_against_output_schema({"x": 1}, schema_file)
