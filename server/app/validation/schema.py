@@ -43,8 +43,15 @@ def validate_skill_output(parsed: dict) -> None:
 def validate_against_output_schema(parsed: dict, schema_path: Path) -> None:
     if not schema_path.exists():
         raise SchemaViolation(f"output schema missing at {schema_path}")
-    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    try:
+        raw = schema_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise SchemaViolation(f"output schema unreadable at {schema_path}: {exc}") from exc
+    try:
+        schema = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise SchemaViolation(f"output schema is not valid JSON at {schema_path}: {exc}") from exc
     try:
         jsonschema.validate(instance=parsed, schema=schema)
-    except jsonschema.ValidationError as exc:
+    except (jsonschema.ValidationError, jsonschema.SchemaError) as exc:
         raise SchemaViolation(str(exc)) from exc
