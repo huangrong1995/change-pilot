@@ -15,9 +15,13 @@ Error codes (per spec section 27):
   INTERNAL_ERROR.
 """
 from __future__ import annotations
+import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+
+logger = logging.getLogger(__name__)
 
 
 class ChangePilotError(Exception):
@@ -103,4 +107,5 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _unhandled(_req: Request, exc: Exception):
+        logger.exception("Unhandled exception: %r", exc)
         return _envelope("INTERNAL_ERROR", "internal server error", 500)
