@@ -42,6 +42,42 @@ def test_prompt_excludes_business_rules(tmp_path: Path):
     assert "core rules" not in prompt
 
 
+def test_parse_normalizes_fenced_string_customer_output():
+    inner = "```json\n{\"customer_output\": \"扫码功能优化：优化扫码功能，提升扫码稳定性。\", \"validation\": {}}\n```"
+    stdout = json.dumps({"type": "result", "result": inner}, ensure_ascii=False)
+
+    parsed = _parse_claude_result(stdout)
+
+    assert parsed["customer_output"] == {
+        "title": "扫码功能优化",
+        "description": "优化扫码功能，提升扫码稳定性。",
+    }
+
+
+def test_parse_normalizes_string_without_colon_as_description_only():
+    stdout = json.dumps({"type": "result", "result": json.dumps({"customer_output": "仅描述，无标题"})})
+
+    parsed = _parse_claude_result(stdout)
+
+    assert parsed["customer_output"] == {"title": None, "description": "仅描述，无标题"}
+
+
+def test_parse_preserves_object_customer_output():
+    inner = {"customer_output": {"title": "t", "description": "d"}, "analysis": {"business_intent": "x"}}
+    stdout = json.dumps({"type": "result", "result": json.dumps(inner)})
+
+    parsed = _parse_claude_result(stdout)
+
+    assert parsed == inner
+
+
+def test_parse_malformed_fenced_result_fails_safely():
+    stdout = json.dumps({"type": "result", "result": "```json\n{not json\n```"})
+
+    with pytest.raises(AgentFailed, match="not parseable JSON"):
+        _parse_claude_result(stdout)
+
+
 def test_parse_accepts_direct_inner_skill_dict():
     payload = {"customer_output": {"title": "direct", "description": "direct-description"}}
     assert _parse_claude_result(json.dumps(payload)) == payload

@@ -55,11 +55,50 @@ def build_user_prompt(raw_text: str, context: dict | None = None) -> str:
         f"{ctx_block}\n"
     )
 
+def _strip_code_fence(text: str) -> str:
+    """Remove surrounding markdown JSON fence from a result string."""
+    stripped = text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+    # Drop the opening fence line (``` or ```json) and the closing ```.
+    first_nl = text.find("\n")
+    if first_nl == -1:
+        return ""
+    body = text[first_nl + 1:]
+    if body.rstrip().endswith("```"):
+        body = body[: body.rstrip().rfind("```")]
+    return body.strip()
+
+
+def _normalize_customer_output(co: Any) -> dict[str, Any]:
+    """Map ``customer_output`` into the schema's {title, description} object.
+
+    The skill's default render format is a single line ``{title}：{description}``;
+    when Claude returns that line as a string, split it on the first full-width
+    colon. Object-valued output is passed through unchanged.
+    """
+    if isinstance(co, dict):
+        return co
+    if isinstance(co, str):
+        line = co.strip()
+        if "：" in line:
+            title, _, description = line.partition("：")
+            title = (title.strip()) or None
+            description = description.strip()
+        else:
+            title, description = None, line
+        return {"title": title, "description": description}
+    return co
+
+
 def _parse_claude_result(stdout: str) -> dict[str, Any]:
     """Parse ``claude --output-format json`` payload.
 
     The wrapper may emit a top-level envelope with a ``result`` field
-    holding a JSON string, or it may emit the inner JSON directly.
+    holding a JSON string, or it may emit the inner JSON directly. The
+    inner JSON may itself be wrapped in a markdown code fence, and the
+    ``customer_output`` field may be either the schema's object form or
+    the skill's default single-line string form.
     """
     stdout = stdout.strip()
     try:
@@ -74,12 +113,18 @@ def _parse_claude_result(stdout: str) -> dict[str, Any]:
         return envelope
     if isinstance(inner, str):
         try:
-            return json.loads(inner)
+            parsed = json.loads(_strip_code_fence(inner))
         except json.JSONDecodeError as exc:
             raise AgentFailed(f"agent result is not parseable JSON: {exc}") from exc
-    if isinstance(inner, dict):
-        return inner
-    raise AgentFailed("agent output envelope missing 'result' field")
+        if not isinstance(parsed, dict):
+            raise AgentFailed("agent result is not a JSON object")
+    elif isinstance(inner, dict):
+        parsed = inner
+    else:
+        raise AgentFailed("agent output envelope missing 'result' field")
+    if "customer_output" in parsed:
+        parsed["customer_output"] = _normalize_customer_output(parsed["customer_output"])
+    return parsed
 
 def _extract_skill_output(parsed: dict[str, Any]) -> tuple[str | None, str, dict | None, dict | None]:
     co = parsed.get("customer_output")
