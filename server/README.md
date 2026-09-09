@@ -2,10 +2,34 @@
 
 FastAPI app that exposes the `change-pilot` skill over HTTP.
 
-## Run
+## Quick start (recommended)
 
 ```bash
 cd /home/workspace/code/github/change_pilot_customer
+cp server/.env.example .env        # then set a real CHANGE_PILOT_API_TOKEN
+./server/run.sh start              # creates .venv on first run, starts in background
+```
+
+The launcher handles the virtualenv, dependency install, and setting up a
+local `CHANGE_PILOT_API_TOKEN`/`CHANGE_PILOT_SKILL_DIR`. Settings come from
+`.env`, or `CHANGE_PILOT_*` env vars you export (exported vars win). On
+first run the skill is picked up from `~/.claude/skills/change-pilot`.
+
+Lifecycle commands:
+
+```bash
+./server/run.sh status      # is it running?
+./server/run.sh logs        # follow the log (also at .run/change-pilot.log)
+./server/run.sh restart
+./server/run.sh stop
+./server/run.sh foreground  # run in the current shell for debugging
+```
+
+## Advanced / manual start
+
+For an alternative to the launcher:
+
+```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r server/requirements.txt
 export CHANGE_PILOT_API_TOKEN=dev-token
