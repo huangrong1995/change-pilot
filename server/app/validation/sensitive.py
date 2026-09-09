@@ -24,16 +24,27 @@ def sensitive_matches(matches: Iterable[str]) -> str:
     items = ", ".join(sorted(set(matches)))
     return f"customer_output contains sensitive patterns: {items}"
 
+class SensitiveValidationError(Exception):
+    """Raised when the sensitive-patterns policy cannot be loaded safely."""
+
+
 def load_patterns(yaml_path: Path) -> list[str]:
-    """Flatten the YAML's grouped patterns into a single list of regex strings."""
-    if not yaml_path.exists():
-        return []
-    data = yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
-    patterns = data.get("patterns", {})
+    """Flatten the YAML's grouped patterns into a single list of regex strings.
+
+    The policy is security-critical, so any missing, unreadable, malformed, or
+    structurally invalid file fails closed instead of disabling the check.
+    """
+    try:
+        data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+        raise SensitiveValidationError from exc
+    if not isinstance(data, dict) or not isinstance(data.get("patterns"), dict):
+        raise SensitiveValidationError
     flat: list[str] = []
-    for _, items in patterns.items():
-        if isinstance(items, list):
-            flat.extend(p for p in items if isinstance(p, str))
+    for items in data["patterns"].values():
+        if not isinstance(items, list) or not all(isinstance(p, str) for p in items):
+            raise SensitiveValidationError
+        flat.extend(items)
     return flat
 
 def find_sensitive_matches(patterns: Iterable[str], text: str) -> list[str]:

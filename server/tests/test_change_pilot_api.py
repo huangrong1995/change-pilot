@@ -161,3 +161,42 @@ def test_change_pilot_rejects_sensitive_leak(client, auth_headers, monkeypatch):
     )
     assert r.status_code == 502
     assert r.json()["error"]["code"] == "AGENT_OUTPUT_INVALID"
+
+
+def test_change_pilot_fails_closed_on_missing_sensitive_yaml(client, auth_headers, monkeypatch, tmp_path):
+    from server.app.api import change_pilot as cp
+
+    async def fake_run(self, raw_text, context, mode):
+        return ClaudeRunResult(
+            title="ok",
+            description="扫码功能优化",
+            analysis=None,
+            validation={"passed": True},
+            raw_stdout="{}",
+            exit_code=0,
+        )
+
+    monkeypatch.setattr(cp.ClaudeRunner, "run_async", fake_run)
+
+    # Point the skill_dir at an empty directory so the sensitive YAML is missing.
+    from server.app.config import Settings
+    import server.app.api.change_pilot as cp_mod
+    settings = cp_mod.load_settings()
+    monkeypatch.setattr(
+        cp_mod,
+        "load_settings",
+        lambda: Settings(
+            api_token=settings.api_token,
+            skill_dir=tmp_path,
+            agent_timeout_seconds=settings.agent_timeout_seconds,
+            max_request_bytes=settings.max_request_bytes,
+        ),
+    )
+
+    r = client.post(
+        "/v1/change-pilot",
+        headers=auth_headers,
+        json={"raw_text": "x"},
+    )
+    assert r.status_code == 502
+    assert r.json()["error"]["code"] == "AGENT_OUTPUT_INVALID"

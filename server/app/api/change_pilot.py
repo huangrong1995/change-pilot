@@ -33,6 +33,7 @@ from server.app.validation.schema import (
 )
 from server.app.validation.sensitive import (
     SensitiveLeak,
+    SensitiveValidationError,
     check_description,
 )
 
@@ -132,6 +133,18 @@ async def post_change_pilot(
                 "duration_ms": duration_ms,
             })
             raise AgentOutputInvalid("agent output failed validation") from exc
+        except SensitiveValidationError:
+            # The sensitive-patterns policy could not be loaded (missing,
+            # unreadable, malformed, or invalid structure). Fail closed rather
+            # than serve output without a re-check. Do not leak filesystem or
+            # parser details to the client.
+            duration_ms = int((time.monotonic() - started) * 1000)
+            log.exception("sensitive policy unavailable; failing closed", extra={
+                "operation": "change-pilot",
+                "status": "sensitive_policy_unavailable",
+                "duration_ms": duration_ms,
+            })
+            raise AgentOutputInvalid("agent output failed validation")
 
         duration_ms = int((time.monotonic() - started) * 1000)
         log.info("change-pilot completed", extra={

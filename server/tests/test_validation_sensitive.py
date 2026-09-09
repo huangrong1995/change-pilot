@@ -1,7 +1,13 @@
 import re
 from pathlib import Path
 import pytest
-from server.app.validation.sensitive import load_patterns, find_sensitive_matches, check_description, SensitiveLeak
+from server.app.validation.sensitive import (
+    SensitiveLeak,
+    SensitiveValidationError,
+    load_patterns,
+    find_sensitive_matches,
+    check_description,
+)
 
 SAMPLE_YAML = r"""
 patterns:
@@ -48,3 +54,30 @@ def test_check_description_raises_on_file_path_leak(patterns_file):
     with pytest.raises(SensitiveLeak) as ei:
         check_description("修改 src/main.cpp 解决崩溃", patterns_file)
     assert ".cpp" in str(ei.value)
+
+
+def test_load_patterns_missing_file_fails_closed(tmp_path):
+    with pytest.raises(SensitiveValidationError):
+        load_patterns(tmp_path / "does-not-exist.yaml")
+
+
+def test_load_patterns_unreadable_file_fails_closed(tmp_path):
+    # Reading a directory raises IsADirectoryError even when tests run as root.
+    unreadable = tmp_path / "sensitive-patterns.yaml"
+    unreadable.mkdir()
+    with pytest.raises(SensitiveValidationError):
+        load_patterns(unreadable)
+
+
+def test_load_patterns_malformed_yaml_fails_closed(tmp_path):
+    p = tmp_path / "sensitive-patterns.yaml"
+    p.write_text("patterns: [unclosed")
+    with pytest.raises(SensitiveValidationError):
+        load_patterns(p)
+
+
+def test_load_patterns_invalid_structure_fails_closed(tmp_path):
+    p = tmp_path / "sensitive-patterns.yaml"
+    p.write_text("patterns: not_a_dict\n")
+    with pytest.raises(SensitiveValidationError):
+        load_patterns(p)

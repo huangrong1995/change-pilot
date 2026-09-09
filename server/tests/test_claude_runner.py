@@ -12,23 +12,30 @@ from server.app.agent.runner import (
 from server.app.errors import AgentFailed, AgentStartFailed, AgentTimeout
 
 
-def test_prompt_includes_skill_dir_disallowed_tools_and_raw_text(tmp_path: Path):
+def test_system_and_user_prompts_are_separate_and_tools_are_disallowed(tmp_path: Path):
     raw_text = "Please summarize this customer request."
-    prompt = build_system_prompt(tmp_path, raw_text)
+    system_prompt = build_system_prompt(tmp_path)
+    user_prompt = "Input raw_text:\n" + raw_text
 
-    assert str(tmp_path) in prompt
-    assert "Write, Edit, Bash" in prompt
-    assert "NotebookEdit" in prompt
-    assert "MultiEdit" in prompt
-    assert "WebFetch" in prompt
-    assert "WebSearch" in prompt
-    assert "git commit" in prompt
-    assert "git push" in prompt
-    assert raw_text in prompt
+    assert str(tmp_path) in system_prompt
+    assert raw_text not in system_prompt
+    assert raw_text in user_prompt
+
+
+def test_command_args_use_separate_system_prompt_and_forbid_tools(tmp_path: Path):
+    runner = ClaudeRunner(tmp_path, command_override=lambda *_: (0, "", ""))
+    args = runner._build_args("untrusted")
+
+    assert args[args.index("-p") + 1] == "untrusted"
+    assert args[args.index("--system-prompt") + 1] == build_system_prompt(tmp_path)
+    assert args[args.index("--allowedTools") + 1] == "Read"
+    forbidden = args[args.index("--disallowedTools") + 1]
+    assert all(tool in forbidden for tool in ("Write", "Edit", "Bash", "WebFetch", "WebSearch"))
+    assert "--no-color" not in args
 
 
 def test_prompt_excludes_business_rules(tmp_path: Path):
-    prompt = build_system_prompt(tmp_path, "raw input")
+    prompt = build_system_prompt(tmp_path)
 
     assert "保留业务事实" not in prompt
     assert "core rules" not in prompt
