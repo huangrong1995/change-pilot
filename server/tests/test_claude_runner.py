@@ -32,6 +32,7 @@ def test_command_args_use_separate_system_prompt_and_forbid_tools(tmp_path: Path
     forbidden = args[args.index("--disallowedTools") + 1]
     assert all(tool in forbidden for tool in ("Write", "Edit", "Bash", "WebFetch", "WebSearch"))
     assert "--no-color" not in args
+    assert args[args.index("--output-format") + 1] == "json"
 
 
 def test_prompt_excludes_business_rules(tmp_path: Path):

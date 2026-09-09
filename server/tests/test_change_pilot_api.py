@@ -178,10 +178,18 @@ def test_change_pilot_fails_closed_on_missing_sensitive_yaml(client, auth_header
 
     monkeypatch.setattr(cp.ClaudeRunner, "run_async", fake_run)
 
-    # Point the skill_dir at an empty directory so the sensitive YAML is missing.
+    # Build a skill_dir that HAS a valid output schema (so schema validation
+    # passes) but LACKS rules/sensitive-patterns.yaml. This guarantees the 502
+    # originates from the sensitive-patterns fail-closed branch, not from a
+    # missing output schema.
     from server.app.config import Settings
     import server.app.api.change_pilot as cp_mod
     settings = cp_mod.load_settings()
+    real_schema = settings.skill_dir / "schemas" / "output.schema.json"
+    assert real_schema.exists(), f"real output schema missing at {real_schema}"
+    schema_dir = tmp_path / "schemas"
+    schema_dir.mkdir(parents=True)
+    (schema_dir / "output.schema.json").write_bytes(real_schema.read_bytes())
     monkeypatch.setattr(
         cp_mod,
         "load_settings",
@@ -192,6 +200,11 @@ def test_change_pilot_fails_closed_on_missing_sensitive_yaml(client, auth_header
             max_request_bytes=settings.max_request_bytes,
         ),
     )
+
+    # Setup guard: the schema is present but the sensitive-patterns YAML is not,
+    # so schema validation cannot be the source of the failure below.
+    assert (tmp_path / "schemas" / "output.schema.json").exists()
+    assert not (tmp_path / "rules" / "sensitive-patterns.yaml").exists()
 
     r = client.post(
         "/v1/change-pilot",
