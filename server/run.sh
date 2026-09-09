@@ -58,6 +58,24 @@ configure_environment() {
   export CHANGE_PILOT_HOST CHANGE_PILOT_PORT
 }
 
+ensure_pip_command() {
+  if "$PYTHON" -m pip --version >/dev/null 2>&1; then
+    printf '%s\n' "$PYTHON -m pip"
+    return 0
+  fi
+  # Some distro python3 packages ship without pip in fresh virtualenvs.
+  if "$PYTHON" -m ensurepip --upgrade >/dev/null 2>&1; then
+    printf '%s\n' "$PYTHON -m pip"
+    return 0
+  fi
+  # Fall back to a system uv if available.
+  if command -v uv >/dev/null 2>&1; then
+    printf '%s\n' "uv pip --python $PYTHON"
+    return 0
+  fi
+  return 1
+}
+
 ensure_dependencies() {
   mkdir -p "$RUN_DIR"
   if [[ ! -x "$PYTHON" ]]; then
@@ -74,7 +92,16 @@ ensure_dependencies() {
 
   if [[ "$install" -eq 1 ]]; then
     echo "Installing server dependencies"
-    "$PYTHON" -m pip install -r "$REQUIREMENTS_FILE"
+    local pip_cmd
+    if ! pip_cmd="$(ensure_pip_command)"; then
+      echo "error: no pip in $PYTHON and no 'uv' on PATH." >&2
+      echo "  Install pip for the virtualenv, e.g.:" >&2
+      echo "    $PYTHON_BIN -m ensurepip --upgrade" >&2
+      echo "    or run:  uv venv --seed $VENV_DIR" >&2
+      return 1
+    fi
+    # shellcheck disable=SC2086
+    $pip_cmd install -r "$REQUIREMENTS_FILE"
     touch "$DEPS_STAMP"
   fi
 }
