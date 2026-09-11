@@ -4,5 +4,6 @@ pydantic>=2.6
 httpx>=0.26
 pyyaml>=6.0
 jsonschema>=4.21
+openai>=1.0
 pytest>=8.0
 pytest-asyncio>=0.23

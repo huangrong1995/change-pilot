@@ -1,17 +1,8 @@
-"""GET /health endpoint.
-
-Reports server status, version (read from server package metadata),
-agent availability (whether ``claude`` is on PATH), and skill
-availability (whether the configured skill directory has SKILL.md).
-"""
+"""GET /health endpoint for runtime readiness."""
 from __future__ import annotations
-import shutil
-from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
-
-from server.app.config import Settings
 
 
 router = APIRouter()
@@ -20,26 +11,31 @@ router = APIRouter()
 class HealthReport(BaseModel):
     status: str
     version: str
+    runtime: dict
     agent: dict
     skill: dict
+    provider: dict
 
 
 def _read_version() -> str:
-    # Phase 1–4 hardcode 0.1.0; Phase 5 reads from pyproject.
     return "0.1.0"
 
 
-def build_health(settings: Settings) -> HealthReport:
-    skill_path = Path(settings.skill_dir) / "SKILL.md"
+def build_health(runtime) -> HealthReport:
+    available = runtime is not None
     return HealthReport(
         status="ok",
         version=_read_version(),
-        agent={"available": shutil.which("claude") is not None},
-        skill={"available": skill_path.exists()},
+        runtime={"available": available},
+        agent={"available": available},
+        skill={"available": available},
+        provider={
+            "configured": bool(runtime and runtime.provider_configured),
+            "model": getattr(runtime, "model", None) if runtime else None,
+        },
     )
 
 
 @router.get("/health", response_model=HealthReport)
-def get_health() -> HealthReport:
-    from server.app.config import load_settings
-    return build_health(load_settings())
+def get_health(request: Request) -> HealthReport:
+    return build_health(getattr(request.app.state, "change_pilot_runtime", None))

@@ -1,0 +1,40 @@
+[Unit]
+Description=Change Pilot Agent Server (OpenAI-compatible runtime)
+Documentation=https://github.com/<your-org>/change-pilot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Least privilege: run as a dedicated, unprivileged service account.
+User=change-pilot
+Group=change-pilot
+
+# Point at the repository checkout.
+WorkingDirectory=/opt/change-pilot
+# The repository virtualenv (created by ./server/run.sh start). Adjust the
+# path if the venv lives elsewhere (e.g. a per-deploy virtualenv).
+ExecStart=/opt/change-pilot/.venv/bin/python -m uvicorn server.app.main:app \
+    --host 0.0.0.0 --port 8080
+
+# All configuration (including the provider API key) comes from the
+# environment file. It must be readable only by this user/group and must
+# NEVER be committed to git.
+EnvironmentFile=/opt/change-pilot/.env
+
+Restart=on-failure
+RestartSec=3
+# Uvicorn + FastAPI are single-process; a modest limit avoids runaway memory.
+MemoryMax=512M
+LimitNOFILE=65536
+
+# Hardening.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+ReadOnlyPaths=/opt/change-pilot/.claude/skills/change-pilot
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target
