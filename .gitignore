@@ -34,3 +34,7 @@ __pycache__/
 
 # Project-local DSH install (for testing only — root project is on GitHub)
 .dsh/
+
+# Script-only comparison baseline and local sample data (not published)
+pure_script_baseline/
+scripts/*.xlsx
