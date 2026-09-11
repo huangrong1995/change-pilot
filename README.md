@@ -166,6 +166,35 @@ Default mode never emits JSON, analysis tables, stage labels, or commentary — 
 
 **Out of scope** (intentional): Git analysis, code review, risk analysis, RAG, automated Excel editing, Jenkins integration, automatic code analysis, test plan generation.
 
+## HTTP server / runtime
+
+A bundled FastAPI server (`server/`) exposes the same transformation over the
+network using the **Lightweight Runtime V1**: instead of starting `claude -p`
+for every request, it loads the skill assets once at startup and makes exactly
+one direct, model call per request. It speaks the **OpenAI-compatible Chat
+Completions** protocol, so any compatible provider (MiniMax, DeepSeek, Qwen,
+…) works by configuring only a URL, an API key, and a model name:
+
+```bash
+export CHANGE_PILOT_BASE_URL=https://api.example.com/v1
+export CHANGE_PILOT_API_KEY=<provider-key>
+export CHANGE_PILOT_MODEL=<model-name>
+```
+
+- `POST /v1/change-pilot` — same default/debug output contract as the skill.
+- Bearer-token auth, request-size protection, request IDs, and fail-closed
+  output validation are preserved.
+- Default responses contain only the customer-facing line; `raw_text`, full
+  prompts, provider payloads, and API keys are never logged.
+- No subprocess and no `claude` CLI are involved in production.
+
+See [`server/README.md`](./server/README.md) for full setup, env vars, the CLI,
+a migration note, and the security contract.
+
+> **Migration note:** the server no longer starts Claude Code. Requests are
+> served by one stateless direct model call against OpenAI-compatible
+> endpoints.
+
 ## License
 
 [MIT](./LICENSE)
