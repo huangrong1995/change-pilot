@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Run a fixed-concurrency Change Pilot REST test from an XLSX change sheet.
+"""Run a concurrent Change Pilot REST test from an XLSX change sheet.
 
 The script reads raw change points, checks service health, then processes rows
-in batches of five concurrent requests. Each row gets at most three retries
-after its initial request. Credentials and provider payloads are never printed.
+with a configurable number of concurrent requests (``--concurrency``, default
+5). Each row gets at most ``--retry`` retries after its initial request
+(default 3). Credentials and provider payloads are never printed.
 """
 from __future__ import annotations
 
@@ -278,11 +279,14 @@ def _request_json(
     return parsed
 
 
-def health_check(base_url: str, token: str) -> None:
+def health_check(base_url: str, token: str) -> str:
     try:
         result = _request_json(f"{base_url}/health", token)
         if result.get("status") != "ok":
             raise RequestFailure("health status 非 ok")
+        provider = result.get("provider")
+        model = provider.get("model") if isinstance(provider, dict) else None
+        return model.strip() if isinstance(model, str) and model.strip() else "未配置"
     except RequestFailure as exc:
         raise RequestFailure(f"健康检查失败: {exc}") from exc
 
@@ -420,9 +424,29 @@ def process_in_batches(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--xlsx", type=Path, required=True, help="原始变更单 .xlsx 路径")
-    parser.add_argument("--base-url", required=True, help="Change Pilot 服务地址，例如 http://127.0.0.1:18081")
+    parser = argparse.ArgumentParser(
+        description=(
+            "从 XLSX 变更单读取原始变更点，检查服务健康状态后，以固定并发请求数"
+            "批量调用 Change Pilot 接口提炼客户可见的变更点。"
+        ),
+        epilog=(
+            "示例：\n"
+            "  python3 scripts/xlsx_change_pilot.py --xlsx 变更单.xlsx "
+            "--base-url http://127.0.0.1:18081\n"
+            "  python3 scripts/xlsx_change_pilot.py --xlsx 变更单.xlsx "
+            "--base-url http://127.0.0.1:18081 --concurrency 10 --retry 2\n\n"
+            "接口令牌从仓库根目录 .env 的 CHANGE_PILOT_API_TOKEN 读取，不会打印。"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--xlsx", type=Path, required=True,
+        help="原始变更单 .xlsx 路径",
+    )
+    parser.add_argument(
+        "--base-url", required=True,
+        help="Change Pilot 服务地址，例如 http://127.0.0.1:18081",
+    )
     parser.add_argument(
         "--concurrency", type=int, default=WORKERS,
         help=f"并发请求数（默认 {WORKERS}）",
@@ -450,11 +474,11 @@ def main(argv: list[str] | None = None) -> int:
         print("服务检查失败: .env 中未找到 CHANGE_PILOT_API_TOKEN", file=sys.stderr)
         return 2
     try:
-        health_check(base_url, token)
+        model = health_check(base_url, token)
     except RequestFailure as exc:
         print(str(exc), file=sys.stderr)
         return 2
-    print(f"健康检查通过: {base_url}/health")
+    print(f"健康检查通过，当前模型: {model}")
 
     stats = ApiStats()
     started_at = time.perf_counter()
