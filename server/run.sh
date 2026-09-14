@@ -142,10 +142,16 @@ start_server() {
   fi
 
   mkdir -p "$RUN_DIR"
-  nohup "$PYTHON" -m uvicorn server.app.main:app \
+  # Route output through a size-capped log writer so .run/change-pilot.log
+  # cannot grow unbounded. The tracked PID is the writer; it forwards SIGTERM
+  # to uvicorn, so `stop` still stops the server. Caps are overridable via env.
+  local log_max_bytes="${CHANGE_PILOT_LOG_MAX_BYTES:-$((10 * 1024 * 1024))}"
+  local log_backups="${CHANGE_PILOT_LOG_BACKUPS:-2}"
+  nohup "$PYTHON" "$REPO_ROOT/server/log_tee.py" "$LOG_FILE" "$log_max_bytes" "$log_backups" -- \
+    "$PYTHON" -m uvicorn server.app.main:app \
     --host "$CHANGE_PILOT_HOST" \
     --port "$CHANGE_PILOT_PORT" \
-    >>"$LOG_FILE" 2>&1 &
+    >/dev/null 2>&1 &
   pid=$!
   printf '%s\n' "$pid" > "$PID_FILE"
 
