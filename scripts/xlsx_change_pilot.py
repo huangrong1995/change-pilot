@@ -25,7 +25,7 @@ from xml.etree import ElementTree
 from openpyxl import load_workbook
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
 WORKERS = 5
 MAX_RETRIES = 3
 REQUEST_TIMEOUT_SECONDS = 120
@@ -63,7 +63,7 @@ class ApiStats:
 
 
 def load_token() -> str:
-    env_path = REPO_ROOT / ".env"
+    env_path = SCRIPT_DIR / ".env"
     if not env_path.exists():
         return ""
     for line in env_path.read_text(encoding="utf-8").splitlines():
@@ -435,7 +435,7 @@ def main(argv: list[str] | None = None) -> int:
             "--base-url http://127.0.0.1:18081\n"
             "  python3 scripts/xlsx_change_pilot.py --xlsx 变更单.xlsx "
             "--base-url http://127.0.0.1:18081 --concurrency 10 --retry 2\n\n"
-            "接口令牌从仓库根目录 .env 的 CHANGE_PILOT_API_TOKEN 读取，不会打印。"
+            "接口令牌从脚本同目录 .env 的 CHANGE_PILOT_API_TOKEN 读取，不会打印。"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
