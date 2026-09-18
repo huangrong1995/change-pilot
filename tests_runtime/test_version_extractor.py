@@ -1,5 +1,5 @@
 """Deterministic version-change extraction (runtime fallback for the model)."""
-from runtime.version_extractor import extract_version_changes
+from runtime.version_extractor import build_version_block, extract_version_changes
 
 
 def test_old_and_new_version_yield_upgrade_line():
@@ -43,3 +43,12 @@ def test_duplicates_removed_order_preserved():
         "NDK_V4.1.12 升级至 NDK_V4.1.13",
         "MDB芯片升级至 V1.1.21",
     ]
+
+
+def test_build_version_block_none_for_empty():
+    assert build_version_block([]) is None
+
+
+def test_build_version_block_formats_lines():
+    block = build_version_block(["NDK_V4.1.12 升级至 NDK_V4.1.13"])
+    assert block == "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13"

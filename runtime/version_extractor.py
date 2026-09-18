@@ -61,6 +61,13 @@ def extract_version_changes(raw_text: str) -> list[str]:
     return lines
 
 
+def build_version_block(lines: list[str]) -> str | None:
+    """Return the ``版本变更：`` block text, or ``None`` when there is nothing."""
+    if not lines:
+        return None
+    return "版本变更：\n" + "\n".join(lines)
+
+
 def _new_version(text: str, start: int) -> str | None:
     m = _VERSION_TOKEN.search(text, start)
     if m is None or m.start() > start + _NEW_GAP:
