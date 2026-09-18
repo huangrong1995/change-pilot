@@ -271,12 +271,12 @@ def read_change_points(path: Path) -> list[ChangePoint]:
 def write_refined_to_module_column(
     source_path: Path, results: list[tuple[ChangePoint, str | None]]
 ) -> Path | None:
-    """Append each refined change point to its row's module column.
+    """Overwrite each row's module column with its refined change point.
 
-    Every successful point is written into the module-column cell of the row it
-    came from: existing text stays, followed by a newline and the refined point.
-    A failed point leaves its module cell untouched. The result is saved as a
-    new workbook named ``<source_stem>_AI.xlsx``; the source is never modified.
+    Every successful point replaces the module-column cell of the row it came
+    from. A failed point leaves its module cell untouched. The result is saved
+    as a new workbook named ``<source_stem>_AI.xlsx``; the source is never
+    modified.
 
     Returns the output path, or ``None`` when no sheet exposes a module column
     or no point succeeded.
@@ -299,8 +299,7 @@ def write_refined_to_module_column(
         if target is None or column is None:
             return None
         for point, output in successful:
-            cell = target.cell(row=point.row_number, column=column)
-            cell.value = output if not cell.value else f"{cell.value}\n{output}"
+            target.cell(row=point.row_number, column=column).value = output
         output_path = source_path.with_name(f"{source_path.stem}_AI.xlsx")
         workbook.save(output_path)
         return output_path
