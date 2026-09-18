@@ -43,17 +43,27 @@ def extract_version_changes(raw_text: str) -> list[str]:
         new = _new_version(raw_text, m.end())
         if new is None:
             continue  # e.g. ``更新至最新`` — no version, ambiguous, skip
-        old = _old_version(raw_text, m.start())
         subject = _subject_before(raw_text, m.start())
-        if subject and _VERSION_TOKEN.search(subject) is None:
-            # A non-version component subject abuts the connector (e.g. ``MDB芯片``)
-            # → prefer the subject form over a version from a prior clause.
-            line = f"{subject}{connector} {new}"
-        else:
-            if old is None:
-                continue  # no old version and no component subject → skip
-            if old == new:
+        if subject and _VERSION_TOKEN.fullmatch(subject):
+            # The token directly abutting the connector is itself the OLD version.
+            if subject == new:
                 continue  # same-version no-op; never invent an upgrade
+            line = f"{subject} 升级至 {new}"
+        elif subject and _VERSION_TOKEN.search(subject) is None:
+            # A clean non-version component subject abuts the connector (e.g.
+            # ``MDB芯片``) → use the subject form rather than a version from a
+            # prior clause.
+            line = f"{subject}{connector} {new}"
+        elif subject:
+            # Subject is fused with an adjacent version from a prior clause
+            # (e.g. ``NDK_V4.1.13与MDB芯片升级至``) → ambiguous; never invent a
+            # cross-component upgrade. Skip this occurrence.
+            continue
+        else:
+            # No abutting subject token — look for a preceding old version.
+            old = _old_version(raw_text, m.start())
+            if old is None or old == new:
+                continue
             line = f"{old} 升级至 {new}"
         if line not in seen:
             seen.add(line)

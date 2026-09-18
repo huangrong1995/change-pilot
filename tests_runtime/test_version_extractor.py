@@ -31,6 +31,11 @@ def test_long_prefix_new_version_is_not_truncated():
     assert extract_version_changes("设备版本升级至PaymentServer_V1.0.72T") == ["设备版本升级至 PaymentServer_V1.0.72T"]
 
 
+def test_fused_subject_with_prior_version_is_not_invented():
+    raw = "NDK_V4.1.12 升级至 NDK_V4.1.13与MDB芯片升级至V1.1.21"
+    assert extract_version_changes(raw) == ["NDK_V4.1.12 升级至 NDK_V4.1.13"]
+
+
 def test_no_version_change_returns_empty():
     assert extract_version_changes("优化扫码功能，提升扫码稳定性。") == []
 
