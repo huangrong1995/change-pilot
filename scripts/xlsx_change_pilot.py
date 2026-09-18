@@ -82,6 +82,25 @@ def _text(value: Any) -> str:
     return str(value).strip()
 
 
+def _is_module_header(value: Any) -> bool:
+    """True when *value* is a standalone module-column header.
+
+    The normalised text must contain ``模块`` yet stay short (a header, not a
+    long description such as ``安全模块固件版本号`` or ``各模块有单独版本号``).
+    """
+    normalised = _normalise(value)
+    return "模块" in normalised and len(normalised) <= 6
+
+
+def _module_column(sheet: Any, header_rows: int = 30) -> int | None:
+    """Return the 1-based module column of *sheet*, else None if not found."""
+    for row in sheet.iter_rows(max_row=header_rows):
+        for cell in row:
+            if cell.value is not None and _is_module_header(cell.value):
+                return cell.column
+    return None
+
+
 def _column_index(reference: str) -> int:
     letters = "".join(char for char in reference if char.isalpha())
     index = 0
@@ -245,6 +264,46 @@ def read_change_points(path: Path) -> list[ChangePoint]:
 
         names = ", ".join(sheet.title for sheet in sheets)
         raise InputError(f"XLSX 中没有可用的原始变更点（工作表: {names}）")
+    finally:
+        workbook.close()
+
+
+def write_refined_to_module_column(
+    source_path: Path, results: list[tuple[ChangePoint, str | None]]
+) -> Path | None:
+    """Append each refined change point to its row's module column.
+
+    Every successful point is written into the module-column cell of the row it
+    came from: existing text stays, followed by a newline and the refined point.
+    A failed point leaves its module cell untouched. The result is saved as a
+    new workbook named ``<source_stem>_AI.xlsx``; the source is never modified.
+
+    Returns the output path, or ``None`` when no sheet exposes a module column
+    or no point succeeded.
+    """
+    successful = [(point, output) for point, output in results if output]
+    if not successful:
+        return None
+    try:
+        workbook = load_workbook(source_path, data_only=False)
+    except Exception as exc:  # noqa: BLE001 - normalize library/parser errors
+        raise InputError(f"XLSX 无法以可写模式打开: {source_path}") from exc
+    try:
+        target: Any = None
+        column: int | None = None
+        for sheet in workbook.worksheets:
+            found = _module_column(sheet)
+            if found is not None:
+                target, column = sheet, found
+                break
+        if target is None or column is None:
+            return None
+        for point, output in successful:
+            cell = target.cell(row=point.row_number, column=column)
+            cell.value = output if not cell.value else f"{cell.value}\n{output}"
+        output_path = source_path.with_name(f"{source_path.stem}_AI.xlsx")
+        workbook.save(output_path)
+        return output_path
     finally:
         workbook.close()
 
@@ -498,6 +557,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"总耗时: {elapsed_seconds:.2f} 秒")
     print(f"API 总调用次数: {stats.total_calls}")
     print(f"API 失败次数: {stats.failed_calls}")
+    try:
+        output_path = write_refined_to_module_column(args.xlsx, results)
+    except InputError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if output_path is None:
+        print("提醒: 未找到含'模块'列头的工作表，未写回结果（仅 console 输出）")
+    else:
+        print(f"已写回模块列，输出文件: {output_path}")
     return 0
 
 
