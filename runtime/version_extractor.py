@@ -30,7 +30,7 @@ _CONNECTORS = re.compile(
 _SUBJECT_BEFORE = re.compile(r"([一-鿿A-Za-z0-9_.]+)\s*$")
 
 _OLD_WINDOW = 40  # chars to scan back for the previous version / subject
-_NEW_WINDOW = 20  # chars to scan forward for the new version
+_NEW_GAP = 8  # max chars between the connector and the new version (allows whitespace)
 
 
 def extract_version_changes(raw_text: str) -> list[str]:
@@ -62,8 +62,10 @@ def extract_version_changes(raw_text: str) -> list[str]:
 
 
 def _new_version(text: str, start: int) -> str | None:
-    m = _VERSION_TOKEN.search(text[start:start + _NEW_WINDOW])
-    return m.group(1) if m else None
+    m = _VERSION_TOKEN.search(text, start)
+    if m is None or m.start() > start + _NEW_GAP:
+        return None
+    return m.group(1)
 
 
 def _old_version(text: str, end: int) -> str | None:

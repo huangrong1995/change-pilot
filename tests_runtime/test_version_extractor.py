@@ -27,6 +27,10 @@ def test_compatibility_note_is_not_an_upgrade():
     assert extract_version_changes("配置了PaymentServer_V1.0.71T及以上版本使用") == []
 
 
+def test_long_prefix_new_version_is_not_truncated():
+    assert extract_version_changes("设备版本升级至PaymentServer_V1.0.72T") == ["设备版本升级至 PaymentServer_V1.0.72T"]
+
+
 def test_no_version_change_returns_empty():
     assert extract_version_changes("优化扫码功能，提升扫码稳定性。") == []
 
