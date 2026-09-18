@@ -7,6 +7,7 @@ import threading
 
 from runtime.models import ModelReply, OutputInvalidError, TransformResult
 from runtime.prompt_builder import PromptBuilder
+from runtime.version_extractor import build_version_block, extract_version_changes
 from runtime.validator import OutputValidator
 from server.app.models.response import build_customer_output_line
 
@@ -38,13 +39,13 @@ class ChangePilotRuntime:
         messages = self._messages(raw_text, context, mode)
         async with self._async_semaphore:
             reply = await self._client.acomplete(messages)
-        return self._finish(reply)
+        return self._finish(reply, raw_text)
 
     def transform(self, raw_text, context, mode) -> TransformResult:
         messages = self._messages(raw_text, context, mode)
         with self._sync_semaphore:
             reply = self._client.complete(messages)
-        return self._finish(reply)
+        return self._finish(reply, raw_text)
 
     def _messages(self, raw_text, context, mode):
         return [
@@ -52,16 +53,21 @@ class ChangePilotRuntime:
             {"role": "user", "content": self._builder.user_message(raw_text, context, mode)},
         ]
 
-    def _finish(self, reply: ModelReply) -> TransformResult:
+    def _finish(self, reply: ModelReply, raw_text: str) -> TransformResult:
         try:
             parsed = json.loads(_extract_json(reply.text))
         except (json.JSONDecodeError, TypeError, ValueError) as exc:
             raise OutputInvalidError("model output is not valid JSON") from exc
         verified = self._validator.process(parsed)
+        description = verified.description
+        if "版本变更：" not in description:
+            block = build_version_block(extract_version_changes(raw_text))
+            if block:
+                description = description.rstrip() + "\n" + block
         return TransformResult(
             title=verified.title,
-            description=verified.description,
-            customer_line=build_customer_output_line(verified.title, verified.description),
+            description=description,
+            customer_line=build_customer_output_line(verified.title, description),
             analysis=verified.analysis,
             validation=verified.validation,
             usage=reply.usage,
