@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import threading
 
 from runtime.models import ModelReply, OutputInvalidError, TransformResult
@@ -64,6 +65,7 @@ class ChangePilotRuntime:
             block = build_version_block(extract_version_changes(raw_text))
             if block:
                 description = description.rstrip() + "\n" + block
+        description = _normalize_html_artifacts(description)
         return TransformResult(
             title=verified.title,
             description=description,
@@ -147,3 +149,20 @@ def _extract_json(text: str) -> str:
         except (json.JSONDecodeError, TypeError):
             continue
     return parseable[0]
+
+
+# A model-emitted HTML line break in any casing/slash variant: ``<br>``,
+# ``<br/>``, ``<BR />``, etc.
+_HTML_BR = re.compile(r"<br\s*/?>", re.IGNORECASE)
+
+
+def _normalize_html_artifacts(text: str) -> str:
+    """Collapse model-emitted HTML artifacts into plain text so customer-facing
+    output never shows literal markup. ``<br>`` (any variant) becomes a line
+    break, ``&nbsp;`` becomes a space. The model occasionally emits these instead
+    of ``\\n`` (e.g. ``版本变更：<br>PaymentServer升级至 V1.0.71T``)."""
+    if not text:
+        return text
+    text = _HTML_BR.sub("\n", text)
+    text = text.replace("&nbsp;", " ")
+    return text

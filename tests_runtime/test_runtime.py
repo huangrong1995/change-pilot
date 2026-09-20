@@ -78,3 +78,40 @@ def test_reasoning_sketch_with_braces_is_ignored():
                '{"customer_output": {"title": "扫码", "description": "提升稳定性"}}')
     result = make_runtime(payload).transform("修复扫码", None, "default")
     assert result.customer_line == "扫码：提升稳定性"
+
+
+def test_html_br_in_model_output_is_normalized_to_newline():
+    # The model occasionally emits literal <br> as a line separator; it must never
+    # surface as markup in the customer-facing output.
+    payload = json.dumps({"customer_output": {
+        "title": "PaymentServer功能优化",
+        "description": "1.新增辅芯日志上送主芯功能。<br>2.优化P300背光键盘控制逻辑。<br>版本变更：<br>PaymentServer升级至 V1.0.71T",
+    }})
+    result = make_runtime(payload).transform("paymentserver升级", None, "default")
+    assert result.description == (
+        "1.新增辅芯日志上送主芯功能。\n2.优化P300背光键盘控制逻辑。\n"
+        "版本变更：\nPaymentServer升级至 V1.0.71T"
+    )
+    assert "<br" not in result.customer_line
+
+
+def test_html_br_in_version_block_from_model_is_not_duplicated():
+    # Even when the model already supplied the version block (with <br>), the
+    # deterministic extractor must not append a second block, and the <br> is
+    # normalized to a real line break.
+    payload = json.dumps({"customer_output": {
+        "title": "PaymentServer功能优化",
+        "description": "优化PaymentServer功能。\n版本变更：<br>PaymentServer_V1.0.71T",
+    }})
+    result = make_runtime(payload).transform(
+        "paymentserver_V1.0.71T升级", None, "default")
+    assert result.description == "优化PaymentServer功能。\n版本变更：\nPaymentServer_V1.0.71T"
+    assert result.description.count("版本变更：") == 1
+
+
+def test_nbsp_is_normalized_to_space():
+    payload = json.dumps({"customer_output": {
+        "title": "扫码", "description": "优化&nbsp;扫码功能&nbsp;稳定性",
+    }})
+    result = make_runtime(payload).transform("修复扫码", None, "default")
+    assert result.description == "优化 扫码功能 稳定性"
