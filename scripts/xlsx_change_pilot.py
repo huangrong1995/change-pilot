@@ -11,16 +11,15 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import json
+import re
 import sys
 import time
 import urllib.error
 import threading
 import urllib.request
-import zipfile
 from dataclasses import dataclass, field as dataclass_field
 from pathlib import Path
 from typing import Any, Callable
-from xml.etree import ElementTree
 
 from openpyxl import load_workbook
 
@@ -101,78 +100,20 @@ def _module_column(sheet: Any, header_rows: int = 30) -> int | None:
     return None
 
 
-def _column_index(reference: str) -> int:
-    letters = "".join(char for char in reference if char.isalpha())
-    index = 0
-    for char in letters.upper():
-        index = index * 26 + ord(char) - ord("A") + 1
-    return index - 1
+# Category markers that head real change-point descriptions (as opposed to a
+# short module name) in these change sheets, e.g. ``改进: 安全模块``,
+# ``新功能: 触摸屏``, ``错误修复: 液晶``, ``辅助：编译相关``.
+_CHANGE_POINT_PREFIX = re.compile(
+    r"^\s*(改进|新功能|错误修复|修复|优化|新增|调整|补充|辅助|Bug|BUG|ID|版本|[#＃])",
+    re.IGNORECASE,
+)
 
 
-def _xml_rows(path: Path) -> list[list[Any]]:
-    """Read worksheet cells by coordinate when XLSX dimension metadata is wrong."""
-    namespace = {"main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-    with zipfile.ZipFile(path) as archive:
-        shared: list[str] = []
-        if "xl/sharedStrings.xml" in archive.namelist():
-            root = ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))
-            for item in root.findall("main:si", namespace):
-                shared.append("".join(item.itertext()))
-
-        rows: dict[int, dict[int, Any]] = {}
-        for name in archive.namelist():
-            if not name.startswith("xl/worksheets/sheet") or not name.endswith(".xml"):
-                continue
-            root = ElementTree.fromstring(archive.read(name))
-            for row in root.findall(".//main:row", namespace):
-                row_number = int(row.attrib.get("r", "0"))
-                if not row_number:
-                    continue
-                values = rows.setdefault(row_number, {})
-                for cell in row.findall("main:c", namespace):
-                    reference = cell.attrib.get("r", "")
-                    if not reference:
-                        continue
-                    column = _column_index(reference)
-                    kind = cell.attrib.get("t")
-                    value_node = cell.find("main:v", namespace)
-                    inline_node = cell.find("main:is", namespace)
-                    if kind == "inlineStr" and inline_node is not None:
-                        value: Any = "".join(inline_node.itertext())
-                    elif value_node is None:
-                        value = ""
-                    elif kind == "s":
-                        index = int(value_node.text or "0")
-                        value = shared[index] if index < len(shared) else ""
-                    else:
-                        value = value_node.text or ""
-                    values[column] = value
-
-    if not rows:
-        return []
-    width = max(max(row) for row in rows.values()) + 1
-    return [[row.get(column, "") for column in range(width)] for _, row in sorted(rows.items())]
-
-
-def _extract_points_from_rows(rows: list[list[Any]]) -> list[ChangePoint]:
-    candidates: list[tuple[int, int, list[ChangePoint]]] = []
-    for header_row, row in enumerate(rows):
-        for header_index, value in enumerate(row):
-            if not any(name in _normalise(value) for name in CHANGE_POINT_HEADERS):
-                continue
-            points = []
-            for row_number, data in enumerate(rows[header_row + 1:], start=header_row + 2):
-                cell = _text(data[header_index] if header_index < len(data) else None)
-                if cell:
-                    points.append(ChangePoint(row_number, cell))
-            if points:
-                # Prefer the candidate yielding the most data rows. This
-                # avoids treating a merged section title as the real header
-                # in multi-level change-sheet layouts.
-                candidates.append((len(points), header_row, points))
-    if candidates:
-        return max(candidates, key=lambda candidate: (candidate[0], candidate[1]))[2]
-    return []
+def _looks_like_change_point(text: str) -> bool:
+    """True when *text* reads as a change-point description rather than a short
+    module name: it leads with a category marker or carries the ``详细信息``
+    detail marker found in these sheets' change-point cells."""
+    return bool(_CHANGE_POINT_PREFIX.match(text) or "详细信息" in text)
 
 
 def read_change_points(path: Path) -> list[ChangePoint]:
@@ -185,7 +126,7 @@ def read_change_points(path: Path) -> list[ChangePoint]:
         raise InputError(f"仅支持 .xlsx 文件: {path}")
 
     try:
-        workbook = load_workbook(path, read_only=True, data_only=True)
+        workbook = load_workbook(path, read_only=False, data_only=True)
     except Exception as exc:  # noqa: BLE001 - normalize library/parser errors
         raise InputError(f"XLSX 文件无法读取，可能已加密或损坏: {path}") from exc
 
@@ -194,73 +135,41 @@ def read_change_points(path: Path) -> list[ChangePoint]:
         if not sheets:
             raise InputError("XLSX 中没有工作表")
 
-        # Prefer an explicitly named change-point column wherever it appears.
+        # Search every sheet for a change-point column and pick, across the whole
+        # workbook, the header (row, column) whose cells read most like change
+        # points. Ordinary (non-read-only) mode is used deliberately: some
+        # workbooks carry an incorrect ``dimension`` so the read-only parser sees
+        # only the first row, and merging sheets by row number also drops data.
+        # Ranking by change-point-like content (not just row count) keeps a merged
+        # section title such as ``变更点说明`` from out-ranking the real
+        # ``变更点（有0A单、BUG编号的需注明）`` column, whose data rows can be
+        # roughly as numerous as the module-name column's.
+        best_score = (-1, -1)
+        best_points: list[ChangePoint] = []
         for sheet in sheets:
-            rows = sheet.iter_rows(values_only=True)
-            header = next(rows, None)
-            if header is None:
-                continue
-            header_index = next(
-                (
-                    index
-                    for index, value in enumerate(header)
-                    if any(name in _normalise(value) for name in CHANGE_POINT_HEADERS)
-                ),
-                None,
-            )
-            if header_index is None:
-                # A header may not be on row 1 in a formatted change sheet.
-                buffered = [header]
-                buffered.extend(rows)
-                for row_number, row in enumerate(buffered, start=1):
-                    index = next(
-                        (
-                            i for i, value in enumerate(row)
-                            if any(name in _normalise(value) for name in CHANGE_POINT_HEADERS)
-                        ),
-                        None,
+            rows = list(sheet.iter_rows(values_only=True))
+            for header_row, row in enumerate(rows):
+                for header_index, value in enumerate(row):
+                    if not any(name in _normalise(value) for name in CHANGE_POINT_HEADERS):
+                        continue
+                    points = []
+                    for row_number, data in enumerate(rows[header_row + 1:], start=header_row + 2):
+                        if header_index >= len(data):
+                            continue
+                        cell = _text(data[header_index])
+                        if cell:
+                            points.append(ChangePoint(row_number, cell))
+                    if not points:
+                        continue
+                    score = (
+                        sum(1 for point in points if _looks_like_change_point(point.text)),
+                        len(points),
                     )
-                    if index is not None:
-                        points = [
-                            ChangePoint(row_number + offset, value)
-                            for offset, data in enumerate(buffered[row_number:])
-                            if (value := _text(data[index] if index < len(data) else None))
-                        ]
-                        if points:
-                            return points
-                        break
-                continue
-
-            points = []
-            for row_number, row in enumerate(rows, start=2):
-                value = _text(row[header_index] if header_index < len(row) else None)
-                if value:
-                    points.append(ChangePoint(row_number, value))
-            if points:
-                return points
-
-        # Fallback for sheets without a recognizable header: use non-empty
-        # text cells, but do not silently turn a blank/placeholder workbook
-        # into a zero-row successful test.
-        fallback: list[ChangePoint] = []
-        for sheet in sheets:
-            for row_number, row in enumerate(sheet.iter_rows(values_only=True), start=1):
-                values = [_text(value) for value in row]
-                for value in values:
-                    if value:
-                        fallback.append(ChangePoint(row_number, value))
-        if fallback:
-            return fallback
-
-        # Some workbooks contain valid worksheet cells but an incorrect
-        # ``dimension ref="A1"``.  The read-only parser then sees only a
-        # blank cell, so recover values from the worksheet XML directly.
-        try:
-            xml_points = _extract_points_from_rows(_xml_rows(path))
-        except (OSError, KeyError, ValueError, ElementTree.ParseError) as exc:
-            raise InputError(f"XLSX 结构异常，无法读取工作表数据: {path}") from exc
-        if xml_points:
-            return xml_points
+                    if score > best_score:
+                        best_score = score
+                        best_points = points
+        if best_points:
+            return best_points
 
         names = ", ".join(sheet.title for sheet in sheets)
         raise InputError(f"XLSX 中没有可用的原始变更点（工作表: {names}）")
