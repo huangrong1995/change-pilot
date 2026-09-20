@@ -35,7 +35,7 @@ merge_grouping: <if multiple_changes, describe which facts share a business purp
 - **Only judge what the source explicitly says.** No inference of benefits, performance, or UX impact.
 - **Do not convert technical implementation into business value.** A "fix in scan_service.cpp" is a technical detail, not a customer benefit.
 - **Recognize multiple independent changes.** If the source contains multiple distinct business purposes, list each one and decide merge/split.
-- **Identify every internal identifier** in the source: BUG IDs, requirement IDs, 0A IDs, commit hashes, branches, file paths, internal component versions. Add them to `hidden_details`.
+- **Identify every internal identifier** in the source: BUG IDs, requirement IDs, 0A IDs, commit hashes, branches, file paths. Add them to `hidden_details`. **Exception:** module/component **version upgrades** are NOT hidden — surface them so the transform stage can emit them in the `版本变更：` block (see transform.md rule 11).
 - **Use `rules/terminology.yaml` to decide retain/abstract/hide for each technical term.**
 - **Use `rules/sensitive-patterns.yaml` to spot internal identifiers you may have missed.**
 

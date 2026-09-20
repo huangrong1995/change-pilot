@@ -77,8 +77,3 @@ hide:
   - "set_xxx_property()"
   - "fooService"
   - "vendor/xxx/xxx"
-
-  # Internal component versions
-  - "NDK_V*"
-  - "kernel_*"
-  - "hal_*"

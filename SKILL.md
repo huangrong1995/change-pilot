@@ -82,12 +82,12 @@ The full rules are in `rules/core-rules.md`. The short version:
 2. **Hide internal details** — file names, code paths, IDs, `.so`/`.jar`, commits, branches, BUG/需求/0A IDs, internal config, testers, test environment.
 3. **Abstract technical info** — never expose L1 implementation directly; default to L3 product capability. P2P/AP/DHCP/IP → "无线扩展坞能力". Never invent L4 benefits.
 4. **Recognize change type** — new_feature / optimization / bug_fix / compatibility / security_compliance / version_component. Weave into narrative, don't label explicitly unless asked.
-5. **Detail by complexity** — simple: 1 sentence. Normal: title + 1 sentence. Complex: title + 1–2 sentences. Length follows comprehension, not source.
+5. **Detail by complexity** — every output uses `title` + `description`, even simple changes. Normal: title + 1 sentence. Complex: title + 1–2 sentences. Length follows comprehension, not source.
 6. **Technical terms** — see `rules/terminology.yaml` for retain / abstract / hide lists.
 7. **No exaggeration** — every claim traces to source. Forbidden without source support: 显著 / 大幅 / 极大 / 全面 / 彻底 / 完全 / 明显; "性能提升"; "稳定性提升"; "用户体验提升"; "速度提升".
 8. **Multiple changes** — merge if same business purpose / capability / scenario; split if distinct business purposes.
-9. **IDs and versions** — hide BUG/需求/0A/Jira/Commit/Git/Patch/Branch IDs; hide internal component versions (`NDK_V*`); product-facing versions may stay if customers need them.
-10. **Output format** — default `title` + `description`. Simple change may be 1 sentence only.
+9. **IDs and versions** — hide BUG/需求/0A/Jira/Commit/Git/Patch/Branch IDs. Module/component **version upgrades** are the one exception: report them in a `版本变更：` block appended after the description (see transform.md rule 11); never embed version numbers inside the title or description.
+10. **Output format** — default `title` + `description`. Every output, however simple, has a title. If the change upgrades a module/component version, append a `版本变更：` block after the description lines.
 
 ## 5. Sensitive Information Patterns
 
@@ -97,7 +97,7 @@ Internal identifiers, file paths, and code references are detected by the regex 
 
 ### Default render format
 
-Default mode emits **only the customer-facing text**, rendered as a single line:
+Default mode emits **only the customer-facing text**:
 
 ```
 {title}：{description}
@@ -105,12 +105,28 @@ Default mode emits **only the customer-facing text**, rendered as a single line:
 
 Use the full-width Chinese colon `：`, not ASCII `:`. No JSON. No `customer_output` wrapper. No analysis tables. No stage narration. No rule-check tables. No trade-off commentary. Just the line.
 
+When the change upgrades a module/component version, append a `版本变更：` block on its own lines after the description (version numbers belong only in this block):
+
+```
+{title}：{description}
+版本变更：
+{旧版本} 升级至 {新版本}
+```
+
 Examples:
 
 ```
 扫码功能优化：优化扫码功能，提升扫码稳定性。
 无线扩展坞支持优化：新增无线扩展坞相关功能，提升设备与无线扩展设备的连接及使用支持能力。
 PaymentServer 功能优化：优化 PaymentServer 在特定设备状态下的认证处理流程。
+```
+
+With a version upgrade:
+
+```
+MDB芯片功能优化：优化MDB芯片功耗，适用于U2000产品。
+版本变更：
+MDB芯片升级至 V1.1.21
 ```
 
 For multiple independent changes, emit one line per change, in source order, no blank lines between:

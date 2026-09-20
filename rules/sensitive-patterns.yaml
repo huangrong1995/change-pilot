@@ -39,12 +39,6 @@ patterns:
     - "(?i)patch\\s*[:：]"
     - "(?i)tag\\s*[:：]"
 
-  # Internal version components
-  internal_version:
-    - "(?i)NDK[_vV][\\w.]+"
-    - "(?i)kernel[_vV][\\w.]+"
-    - "(?i)hal[_vV][\\w.]+"
-
   # Internal property names
   property:
     - "(?i)(ro|persist|sys)\\.[\\w.]+"

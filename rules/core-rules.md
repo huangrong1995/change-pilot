@@ -83,9 +83,11 @@ Change type guides expression. Unless the user explicitly asks, do not output la
 
 ## Rule 5 — Output Detail
 
+Every output uses `title` + `description`, even simple changes.
+
 | Change complexity | Format                          |
 |-------------------|---------------------------------|
-| Simple            | 1 sentence                      |
+| Simple            | title + 1 sentence              |
 | Normal            | title + 1 sentence              |
 | Complex           | title + 1–2 sentences           |
 
@@ -136,24 +138,31 @@ Examples:
 
 ## Rule 9 — IDs and Versions
 
-**Always hide**: BUG ID, requirement ID, 0A ID, Jira ID, Commit ID, Git ID, Patch ID, Branch, internal component versions.
+**Always hide**: BUG ID, requirement ID, 0A ID, Jira ID, Commit ID, Git ID, Patch ID, Branch.
 
-**Product versions** depend on customer need:
+**Version upgrades** are the one exception: report them in a `版本变更：` block appended after the description (see transform.md rule 11). Never embed the version numbers inside the title or description.
 
-- `NDK_V4.1.44T18 → NDK_V4.1.44T19` — internal component → hide.
-- 产品版本 `V4.1.44T18 → V4.1.44T19` — product-facing → may retain if customers need to identify the product.
+- `NDK_V4.1.12 → NDK_V4.1.13` — internal component upgrade → report in the `版本变更：` block.
+- `MDB芯片升级至 V1.1.21` — component upgrade → report in the `版本变更：` block.
 
 Core test: would the customer need this identifier to understand what changed?
 
 ## Rule 10 — Output Format
 
-Default format: `title` + `description`. Simple change may be 1 sentence only.
+Default format: `title` + `description`. Every output, however simple, has a title. If the change upgrades a module/component version, append a `版本变更：` block after the description lines.
 
 Examples:
 
 ```
-扫码功能优化
-优化扫码功能，提升扫码稳定性。
+扫码功能优化：优化扫码功能，提升扫码稳定性。
+```
+
+With a version upgrade:
+
+```
+MDB芯片功能优化：优化MDB芯片功耗，适用于U2000产品。
+版本变更：
+MDB芯片升级至 V1.1.21
 ```
 
 ```
