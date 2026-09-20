@@ -301,7 +301,13 @@ def write_refined_to_module_column(
         for point, output in successful:
             target.cell(row=point.row_number, column=column).value = output
         output_path = source_path.with_name(f"{source_path.stem}_AI.xlsx")
-        workbook.save(output_path)
+        try:
+            workbook.save(output_path)
+        except OSError as exc:
+            raise InputError(
+                f"无法写入输出文件 {output_path}: {exc}。"
+                "若该文件已在 Excel 中打开，请先关闭后再重试。"
+            ) from exc
         return output_path
     finally:
         workbook.close()
