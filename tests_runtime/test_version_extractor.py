@@ -36,6 +36,14 @@ def test_fused_subject_with_prior_version_is_not_invented():
     assert extract_version_changes(raw) == ["NDK_V4.1.12 升级至 NDK_V4.1.13"]
 
 
+def test_section_header_word_does_not_mask_same_component_old_version():
+    # The section header ``1、版本信息`` puts the weak subject ``信息`` directly
+    # before the connector, which would mask the real old version. A same-component
+    # old version near the connector must win over the stray subject word.
+    raw = "基于NDK_V4.1.12修改：\n1、版本信息\n更新版本号至NDK_V4.1.13；"
+    assert extract_version_changes(raw) == ["NDK_V4.1.12 升级至 NDK_V4.1.13"]
+
+
 def test_no_version_change_returns_empty():
     assert extract_version_changes("优化扫码功能，提升扫码稳定性。") == []
 

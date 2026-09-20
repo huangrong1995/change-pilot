@@ -49,22 +49,30 @@ def extract_version_changes(raw_text: str) -> list[str]:
             if subject == new:
                 continue  # same-version no-op; never invent an upgrade
             line = f"{subject} 升级至 {new}"
-        elif subject and _VERSION_TOKEN.search(subject) is None:
-            # A clean non-version component subject abuts the connector (e.g.
-            # ``MDB芯片``) → use the subject form rather than a version from a
-            # prior clause.
-            line = f"{subject}{connector} {new}"
-        elif subject:
-            # Subject is fused with an adjacent version from a prior clause
-            # (e.g. ``NDK_V4.1.13与MDB芯片升级至``) → ambiguous; never invent a
+        elif _VERSION_TOKEN.search(subject or ""):
+            # The abutting run is fused with a version from another clause
+            # (e.g. ``NDK_V4.1.13与MDB芯片``) → ambiguous, never invent a
             # cross-component upgrade. Skip this occurrence.
             continue
         else:
-            # No abutting subject token — look for a preceding old version.
             old = _old_version(raw_text, m.start())
-            if old is None or old == new:
+            if old is not None and old != new and _component_prefix(old) == _component_prefix(new):
+                # A same-component version sits near the connector even behind a
+                # weak abutting word (e.g. the ``信息`` in ``1、版本信息``), as in
+                # ``基于NDK_V4.1.12修改…更新版本号至NDK_V4.1.13``. A real old→new
+                # for the SAME component is more reliable than a stray subject.
+                line = f"{old} 升级至 {new}"
+            elif subject:
+                # A clean non-version component subject abuts the connector (e.g.
+                # ``MDB芯片``) → use the subject form rather than a version from a
+                # prior clause.
+                line = f"{subject}{connector} {new}"
+            elif old is not None and old != new and _component_prefix(old) != _component_prefix(new):
+                continue  # no subject and only mismatched-component versions → ambiguous
+            elif old is not None and old != new:
+                line = f"{old} 升级至 {new}"
+            else:
                 continue
-            line = f"{old} 升级至 {new}"
         if line not in seen:
             seen.add(line)
             lines.append(line)
@@ -95,3 +103,11 @@ def _old_version(text: str, end: int) -> str | None:
 def _subject_before(text: str, end: int) -> str | None:
     m = _SUBJECT_BEFORE.search(text[max(0, end - _OLD_WINDOW):end])
     return m.group(1) if m else None
+
+
+def _component_prefix(version: str) -> str:
+    """The leading alphabetic/underscore component name of a version token, e.g.
+    ``NDK_V`` for ``NDK_V4.1.13`` or ``PaymentServer_V`` for ``PaymentServer_V1.0.71T``.
+    Empty for a bare dotted version like ``2.0.47``."""
+    m = re.match(r"[A-Za-z_]*", version)
+    return m.group(0) if m else ""
