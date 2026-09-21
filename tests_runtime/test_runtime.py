@@ -126,6 +126,30 @@ def _make_raw(prefix: str, body: str) -> str:
     return f"{prefix} # 详细信息: {body}"
 
 
+def test_fullwidth_detail_colon_preserves_prefix():
+    # Real change sheets mark 详细信息 with the full-width colon ``：`` as often
+    # as the ASCII ``:`` (53 of 64 rows in one sheet). Both must preserve the
+    # ``{类别}: {模块} # 详细信息`` prefix verbatim.
+    raw = "新功能：客显 # 详细信息：新增N950DS客显兼容版本以及识别功能#patch6/6\n测试方法：N950产品启动正常，客显正常显示\n自测checklist：https://newlandnpt.feishu.cn/sheets/CZxnsTacThhoWRt3i4jcY6Gcnhc"
+    payload = json.dumps({"customer_output": {
+        "title": "新功能", "description": "新增N950DS客显兼容版本以及识别功能。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == "新功能：客显 # 详细信息： 新增N950DS客显兼容版本以及识别功能。"
+    # patch id / checklist must never leak into the customer line
+    assert "patch" not in result.customer_line
+    assert "feishu" not in result.customer_line
+
+
+def test_ascii_detail_colon_preserves_prefix():
+    raw = "改进:adbd # 详细信息: 优化用户版本下的系统日志输出"
+    payload = json.dumps({"customer_output": {
+        "title": "改进", "description": "优化用户版本下的系统日志输出。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == "改进:adbd # 详细信息: 优化用户版本下的系统日志输出。"
+
+
 def test_fixed_prefix_without_version_leaves_no_block():
     raw = _make_raw("改进: 触摸屏", "优化触摸灵敏度。")
     payload = json.dumps({"customer_output": {

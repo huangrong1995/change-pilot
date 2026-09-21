@@ -222,11 +222,13 @@ def _prepend_version_block(line: str, version_block: str | None) -> str:
 
 
 # A fixed change-sheet prefix of the form ``新功能: 安全模块(NDK) # 详细信息:``.
-# The prefix (including the ``详细信息`` marker) is preserved verbatim for the
-# customer line; the body between it and the next ``#``-led section (or the end)
-# is what the customerization model refines.
+# The ``详细信息`` marker may be followed by either an ASCII ``:`` or a full-width
+# ``：`` (the two change sheets use both inconsistently). The prefix (including
+# the marker) is preserved verbatim for the customer line; the body between it
+# and the next ``#``-led section (or the end) is what the customerization model
+# refines.
 _SOURCE_SECTION = re.compile(
-    r"^(.*?#\s*详细信息:)\s*(.*?)(?=\n\s*#|\Z)",
+    r"^(.*?#\s*详细信息[:：])\s*(.*?)(?=\n\s*#|\Z)",
     re.DOTALL | re.IGNORECASE,
 )
 
