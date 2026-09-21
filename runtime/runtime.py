@@ -37,13 +37,15 @@ class ChangePilotRuntime:
         return self._client
 
     async def transform_async(self, raw_text, context, mode) -> TransformResult:
-        messages = self._messages(raw_text, context, mode)
+        _, model_text = _extract_prefix_and_body(raw_text)
+        messages = self._messages(model_text, context, mode)
         async with self._async_semaphore:
             reply = await self._client.acomplete(messages)
         return self._finish(reply, raw_text)
 
     def transform(self, raw_text, context, mode) -> TransformResult:
-        messages = self._messages(raw_text, context, mode)
+        _, model_text = _extract_prefix_and_body(raw_text)
+        messages = self._messages(model_text, context, mode)
         with self._sync_semaphore:
             reply = self._client.complete(messages)
         return self._finish(reply, raw_text)
@@ -60,16 +62,27 @@ class ChangePilotRuntime:
         except (json.JSONDecodeError, TypeError, ValueError) as exc:
             raise OutputInvalidError("model output is not valid JSON") from exc
         verified = self._validator.process(parsed)
+        prefix, _ = _extract_prefix_and_body(raw_text)
+        # The model's refined customer description. A version block the model
+        # itself emitted is split out; the deterministic extractor on the full
+        # raw source wins, falling back to the model's block only when the raw
+        # text states no version change.
         description = _normalize_html_artifacts(verified.description)
-        version_block, body = _split_version_block(description)
-        if version_block is None:
-            version_block = build_version_block(extract_version_changes(raw_text))
-        description = body
+        model_block, description = _split_version_block(description)
+        version_block = build_version_block(extract_version_changes(raw_text)) or model_block
+        if prefix:
+            # Fixed-prefix template: version block, then the verbatim prefix
+            # followed by the refined description.
+            line = f"{prefix} {description}" if description else prefix
+            customer_line = _prepend_version_block(line, version_block)
+        else:
+            # No fixed prefix in the source: keep the plain 标题：描述 render.
+            customer_line = _render_customer_line(
+                verified.title, description, version_block)
         return TransformResult(
             title=verified.title,
             description=description,
-            customer_line=_render_customer_line(
-                verified.title, description, version_block),
+            customer_line=customer_line,
             analysis=verified.analysis,
             validation=verified.validation,
             usage=reply.usage,
@@ -199,6 +212,36 @@ def _render_customer_line(title: str | None, description: str,
     followed by the usual ``标题：描述`` line, so release notes open with
     version changes rather than burying them inside the description."""
     line = build_customer_output_line(title, description)
+    return _prepend_version_block(line, version_block)
+
+
+def _prepend_version_block(line: str, version_block: str | None) -> str:
     if not version_block:
         return line
     return version_block + "\n" + line
+
+
+# A fixed change-sheet prefix of the form ``新功能: 安全模块(NDK) # 详细信息:``.
+# The prefix (including the ``详细信息`` marker) is preserved verbatim for the
+# customer line; the body between it and the next ``#``-led section (or the end)
+# is what the customerization model refines.
+_SOURCE_SECTION = re.compile(
+    r"^(.*?#\s*详细信息:)\s*(.*?)(?=\n\s*#|\Z)",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def _extract_prefix_and_body(raw_text: str) -> tuple[str, str]:
+    """Return ``(prefix, body)`` split by the fixed change-sheet header.
+
+    ``prefix`` is the verbatim leading section up to and including the
+    ``# 详细信息:`` marker (e.g. ``新功能: 安全模块(NDK) # 详细信息:``). ``body``
+    is the content after it, up to the next ``#``-led section or the end of the
+    input. When the input carries no such header, returns ``("", raw_text)`` so
+    callers fall back to the plain title-driven render."""
+    m = _SOURCE_SECTION.search(raw_text)
+    if not m:
+        return "", raw_text.strip()
+    prefix = m.group(1).strip()
+    body = m.group(2).strip()
+    return prefix, body

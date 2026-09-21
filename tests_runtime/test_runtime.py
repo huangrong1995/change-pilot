@@ -120,3 +120,51 @@ def test_nbsp_is_normalized_to_space():
     }})
     result = make_runtime(payload).transform("修复扫码", None, "default")
     assert result.description == "优化 扫码功能 稳定性"
+
+
+def _make_raw(prefix: str, body: str) -> str:
+    return f"{prefix} # 详细信息: {body}"
+
+
+def test_fixed_prefix_without_version_leaves_no_block():
+    raw = _make_raw("改进: 触摸屏", "优化触摸灵敏度。")
+    payload = json.dumps({"customer_output": {
+        "title": "改进", "description": "优化触摸灵敏度。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == "改进: 触摸屏 # 详细信息: 优化触摸灵敏度。"
+
+
+def test_fixed_prefix_body_stops_at_next_section():
+    # A ``#``-led section after 详细信息 must not leak into the refined body: the
+    # model is only asked to refine the text up to the next section.
+    raw = "新功能: 安全模块 # 详细信息: 支持黑色背景常驻显示。\n # 备注: 内部备注"
+    payload = json.dumps({"customer_output": {
+        "title": "新功能", "description": "支持黑色背景常驻显示。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == (
+        "新功能: 安全模块 # 详细信息: 支持黑色背景常驻显示。"
+    )
+    assert "备注" not in result.customer_line
+
+
+def test_fixed_prefix_is_preserved_verbatim_with_version_block():
+    # A change sheet with the fixed ``{类别}: {模块} # 详细信息:`` header must
+    # keep the prefix verbatim, put the deterministic version block on top, and
+    # append the model's refined description after the prefix.
+    raw = _make_raw(
+        "新功能: 安全模块(NDK)",
+        "基于NDK_V4.1.12修改，更新版本号至NDK_V4.1.13；支持黑色背景常驻显示。",
+    )
+    payload = json.dumps({"customer_output": {
+        "title": "新功能",
+        "description": "新增虚拟LED灯显示控制功能，支持黑色背景常驻显示。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == (
+        "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n"
+        "新功能: 安全模块(NDK) # 详细信息: 新增虚拟LED灯显示控制功能，支持黑色背景常驻显示。"
+    )
+    # title is retained on the model payload but not used in the customer line.
+    assert result.title == "新功能"
