@@ -108,18 +108,22 @@ def _make_runtime(payload):
 def test_sync_appends_version_block_when_model_omits_it():
     payload = json.dumps({"customer_output": {"title": "扫码", "description": "优化NDK相关功能。"}})
     result = _make_runtime(payload).transform(RAW_WITH_VERSION, None, "default")
-    expected = "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n优化NDK相关功能。"
+    expected = "优化NDK相关功能。"
     assert result.description == expected
-    assert result.customer_line == "扫码：" + expected
+    assert result.customer_line == (
+        "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n扫码：" + expected
+    )
 
 
 @pytest.mark.asyncio
 async def test_async_appends_version_block_when_model_omits_it():
     payload = json.dumps({"customer_output": {"title": "扫码", "description": "优化NDK相关功能。"}})
     result = await _make_runtime(payload).transform_async(RAW_WITH_VERSION, None, "default")
-    expected = "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n优化NDK相关功能。"
+    expected = "优化NDK相关功能。"
     assert result.description == expected
-    assert result.customer_line == "扫码：" + expected
+    assert result.customer_line == (
+        "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n扫码：" + expected
+    )
 
 
 def test_model_version_block_is_moved_to_front_not_duplicated():
@@ -128,8 +132,11 @@ def test_model_version_block_is_moved_to_front_not_duplicated():
         "description": "优化NDK相关功能。\n版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13",
     }})
     result = _make_runtime(payload).transform(RAW_WITH_VERSION, None, "default")
-    assert result.description == "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n优化NDK相关功能。"
-    assert result.description.count("版本变更：") == 1
+    assert result.description == "优化NDK相关功能。"
+    assert result.customer_line == (
+        "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n扫码：优化NDK相关功能。"
+    )
+    assert result.customer_line.count("版本变更：") == 1
 
 
 def test_model_version_block_only_yields_just_block():
@@ -138,7 +145,10 @@ def test_model_version_block_only_yields_just_block():
         "description": "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13",
     }})
     result = _make_runtime(payload).transform(RAW_WITH_VERSION, None, "default")
-    assert result.description == "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13"
+    assert result.description == ""
+    assert result.customer_line == (
+        "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n扫码："
+    )
 
 
 def test_no_version_change_leaves_output_unchanged():

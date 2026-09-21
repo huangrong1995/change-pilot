@@ -64,14 +64,12 @@ class ChangePilotRuntime:
         version_block, body = _split_version_block(description)
         if version_block is None:
             version_block = build_version_block(extract_version_changes(raw_text))
-        if version_block:
-            description = version_block if not body else version_block + "\n" + body
-        else:
-            description = body
+        description = body
         return TransformResult(
             title=verified.title,
             description=description,
-            customer_line=build_customer_output_line(verified.title, description),
+            customer_line=_render_customer_line(
+                verified.title, description, version_block),
             analysis=verified.analysis,
             validation=verified.validation,
             usage=reply.usage,
@@ -191,3 +189,16 @@ def _split_version_block(description: str) -> tuple[str | None, str]:
             body = "\n".join(lines[:i]).strip()
             return (block or None), body
     return None, description.strip()
+
+
+def _render_customer_line(title: str | None, description: str,
+                          version_block: str | None) -> str:
+    """Render the customer-facing line, leading with the version block.
+
+    The ``版本变更：`` block (when present) is a standalone leading section,
+    followed by the usual ``标题：描述`` line, so release notes open with
+    version changes rather than burying them inside the description."""
+    line = build_customer_output_line(title, description)
+    if not version_block:
+        return line
+    return version_block + "\n" + line
