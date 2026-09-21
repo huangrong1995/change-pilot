@@ -89,8 +89,8 @@ def test_html_br_in_model_output_is_normalized_to_newline():
     }})
     result = make_runtime(payload).transform("paymentserver升级", None, "default")
     assert result.description == (
-        "1.新增辅芯日志上送主芯功能。\n2.优化P300背光键盘控制逻辑。\n"
-        "版本变更：\nPaymentServer升级至 V1.0.71T"
+        "版本变更：\nPaymentServer升级至 V1.0.71T\n"
+        "1.新增辅芯日志上送主芯功能。\n2.优化P300背光键盘控制逻辑。"
     )
     assert "<br" not in result.customer_line
 
@@ -105,7 +105,7 @@ def test_html_br_in_version_block_from_model_is_not_duplicated():
     }})
     result = make_runtime(payload).transform(
         "paymentserver_V1.0.71T升级", None, "default")
-    assert result.description == "优化PaymentServer功能。\n版本变更：\nPaymentServer_V1.0.71T"
+    assert result.description == "版本变更：\nPaymentServer_V1.0.71T\n优化PaymentServer功能。"
     assert result.description.count("版本变更：") == 1
 
 

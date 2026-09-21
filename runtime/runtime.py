@@ -60,12 +60,14 @@ class ChangePilotRuntime:
         except (json.JSONDecodeError, TypeError, ValueError) as exc:
             raise OutputInvalidError("model output is not valid JSON") from exc
         verified = self._validator.process(parsed)
-        description = verified.description
-        if "版本变更：" not in description:
-            block = build_version_block(extract_version_changes(raw_text))
-            if block:
-                description = description.rstrip() + "\n" + block
-        description = _normalize_html_artifacts(description)
+        description = _normalize_html_artifacts(verified.description)
+        version_block, body = _split_version_block(description)
+        if version_block is None:
+            version_block = build_version_block(extract_version_changes(raw_text))
+        if version_block:
+            description = version_block if not body else version_block + "\n" + body
+        else:
+            description = body
         return TransformResult(
             title=verified.title,
             description=description,
@@ -166,3 +168,26 @@ def _normalize_html_artifacts(text: str) -> str:
     text = _HTML_BR.sub("\n", text)
     text = text.replace("&nbsp;", " ")
     return text
+
+
+_VERSION_HEADER = "版本变更："
+
+
+def _split_version_block(description: str) -> tuple[str | None, str]:
+    """Return ``(version_block, body)`` split from a model description.
+
+    ``version_block`` is the ``版本变更：`` section (header plus its lines) with
+    trailing blank lines trimmed, or ``None`` when the description carries no such
+    section. ``body`` is everything before that section, with leading/trailing
+    blank lines trimmed. The version block is always rendered first, so this is
+    what moves a model-emitted ``版本变更：`` section to the front of the output."""
+    lines = description.split("\n")
+    for i, line in enumerate(lines):
+        if line.strip().startswith(_VERSION_HEADER):
+            block_lines = lines[i:]
+            while block_lines and not block_lines[-1].strip():
+                block_lines.pop()
+            block = "\n".join(block_lines).strip()
+            body = "\n".join(lines[:i]).strip()
+            return (block or None), body
+    return None, description.strip()
