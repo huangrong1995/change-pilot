@@ -240,17 +240,34 @@ _SOURCE_SECTION = re.compile(
 )
 
 
+def _clean_prefix(prefix: str) -> str:
+    """Drop intermediate `` # <label>：<value>`` sections from a matched prefix.
+
+    A few change points interleave BUG/飞书ID/patch references between the module
+    name and ``详细信息``, e.g. ``错误修复：eSIM服务 # BUG：… # 详细信息：``. Those
+    sections carry no customer value, so the verbatim prefix keeps only the leading
+    ``类别: 模块`` and the trailing ``# 详细信息`` marker."""
+    first = prefix.find("#")
+    last = prefix.rfind("#")
+    if first == -1:
+        return prefix
+    module = prefix[:first].strip()
+    marker = prefix[last:]
+    return f"{module} {marker}".strip()
+
+
 def _extract_prefix_and_body(raw_text: str) -> tuple[str, str]:
     """Return ``(prefix, body)`` split by the fixed change-sheet header.
 
     ``prefix`` is the verbatim leading section up to and including the
-    ``# 详细信息:`` marker (e.g. ``新功能: 安全模块(NDK) # 详细信息:``). ``body``
-    is the content after it, up to the next ``#``-led section or the end of the
+    ``# 详细信息:`` marker (e.g. ``新功能: 安全模块(NDK) # 详细信息:``), with any
+    intermediate `` # BUG：…`` / `` # 飞书ID：…`` sections stripped. ``body`` is
+    the content after it, up to the next ``#``-led section or the end of the
     input. When the input carries no such header, returns ``("", raw_text)`` so
     callers fall back to the plain title-driven render."""
     m = _SOURCE_SECTION.search(raw_text)
     if not m:
         return "", raw_text.strip()
-    prefix = m.group(1).strip()
+    prefix = _clean_prefix(m.group(1).strip())
     body = m.group(2).strip()
     return prefix, body

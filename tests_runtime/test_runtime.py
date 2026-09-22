@@ -150,6 +150,36 @@ def test_ascii_detail_colon_preserves_prefix():
     assert result.customer_line == "改进:adbd # 详细信息: 优化用户版本下的系统日志输出。"
 
 
+def test_intermediate_bug_id_section_is_stripped_from_prefix():
+    # A `` # BUG：…`` section between the module name and ``详细信息`` carries
+    # internal ticket IDs that must never surface on the customer line. Only the
+    # leading ``类别: 模块`` and the ``# 详细信息`` marker are kept.
+    raw = "错误修复：eSIM服务 # BUG：5243041440，5240807933，5240795948，5246663509，5246732037 # 详细信息：修复eSIM服务无法正常连接运营商网络的问题。"
+    payload = json.dumps({"customer_output": {
+        "title": "错误修复", "description": "修复eSIM服务无法正常连接运营商网络的问题。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == (
+        "错误修复：eSIM服务 # 详细信息： 修复eSIM服务无法正常连接运营商网络的问题。"
+    )
+    assert "BUG" not in result.customer_line
+    assert "5243" not in result.customer_line
+
+
+def test_intermediate_feishu_id_section_is_stripped_from_prefix():
+    # Same normalization for a `` # 飞书ID：…`` section.
+    raw = "错误修复： SystemUI # 飞书ID：5916803698 # 详细信息：修复状态栏文字重叠问题。"
+    payload = json.dumps({"customer_output": {
+        "title": "错误修复", "description": "修复状态栏文字重叠问题。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == (
+        "错误修复： SystemUI # 详细信息： 修复状态栏文字重叠问题。"
+    )
+    assert "飞书" not in result.customer_line
+    assert "5916" not in result.customer_line
+
+
 def test_buried_detail_marker_is_not_treated_as_prefix():
     # A ``# 详细信息`` line buried mid-document (not a leading ``类别: 模块``
     # header) must NOT turn the whole leading text into a bogus prefix. Real
