@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from openpyxl import load_workbook
+from openpyxl.cell.cell import MergedCell
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -208,7 +209,19 @@ def write_refined_to_module_column(
         if target is None or column is None:
             return None
         for point, output in successful:
-            target.cell(row=point.row_number, column=column).value = output
+            cell = target.cell(row=point.row_number, column=column)
+            if isinstance(cell, MergedCell):
+                # A merged module cell's ``value`` is read-only. Split the merged
+                # range and write the refined point into this row's own cell so a
+                # row that once belonged to a vertical merge can still be filled.
+                for merged in tuple(target.merged_cells.ranges):
+                    if (
+                        merged.min_row <= cell.row <= merged.max_row
+                        and merged.min_col <= cell.column <= merged.max_col
+                    ):
+                        target.unmerge_cells(str(merged))
+                cell = target.cell(row=point.row_number, column=column)
+            cell.value = output
         output_path = source_path.with_name(f"{source_path.stem}_AI.xlsx")
         try:
             workbook.save(output_path)
