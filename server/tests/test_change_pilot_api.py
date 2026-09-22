@@ -3,7 +3,13 @@ from runtime.models import OutputInvalidError, TransformResult
 
 class FakeRuntime:
     def __init__(self, result=None, error=None):
-        self.result = result or TransformResult("扫码功能优化", "优化扫码功能，提升扫码稳定性。", "扫码功能优化：优化扫码功能，提升扫码稳定性。", {"change_types": ["optimization"]}, {"passed": True})
+        self.result = result or TransformResult(
+            title="扫码功能优化",
+            description="优化扫码功能，提升扫码稳定性。",
+            customer_line="扫码功能优化：优化扫码功能，提升扫码稳定性。",
+            analysis={"change_types": ["optimization"]},
+            validation={"passed": True},
+        )
         self.error = error
         self.received = None
         self.provider_configured = True
@@ -51,7 +57,13 @@ def test_change_pilot_rejects_unknown_field(client, auth_headers):
 
 
 def test_change_pilot_debug_mode_passes_through_analysis(client, app, auth_headers):
-    result = TransformResult("扫码功能优化", "优化扫码功能，提升扫码稳定性。", "扫码功能优化：优化扫码功能，提升扫码稳定性。", {"change_types": ["optimization"], "business_intent": "x"}, {"passed": True})
+    result = TransformResult(
+        title="扫码功能优化",
+        description="优化扫码功能，提升扫码稳定性。",
+        customer_line="扫码功能优化：优化扫码功能，提升扫码稳定性。",
+        analysis={"change_types": ["optimization"], "business_intent": "x"},
+        validation={"passed": True},
+    )
     install(app, result=result)
     body = client.post("/v1/change-pilot", headers=auth_headers, json={"raw_text": "x", "mode": "debug"}).json()
     assert body["analysis"]["business_intent"] == "x"

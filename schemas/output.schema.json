@@ -19,6 +19,11 @@
           "type": "string",
           "description": "Customer-facing description, 1-2 sentences, professional and concise.",
           "minLength": 1
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional refined note carrying information customers need attention to (sync requirements, affected-product scope, deployment caveats). Refined from a 注意／注／提醒 source section and rendered as a standalone 注意： line. Omitted when the change point carries no such note.",
+          "minLength": 1
         }
       },
       "additionalProperties": false

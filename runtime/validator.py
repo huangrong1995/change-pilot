@@ -14,6 +14,7 @@ from server.app.validation.sensitive import find_sensitive_matches
 class VerifiedOutput:
     title: str | None
     description: str
+    note: str | None
     analysis: dict[str, Any] | None
     validation: dict[str, Any] | None
 
@@ -35,7 +36,10 @@ class OutputValidator:
             raise OutputInvalidError("customer_output is invalid")
         title = customer.get("title")
         description = customer.get("description")
+        note = customer.get("note")
         normalized = {"customer_output": {"title": title, "description": description}}
+        if note is not None:
+            normalized["customer_output"]["note"] = note
         for key in ("analysis", "validation"):
             if key in parsed:
                 normalized[key] = parsed[key]
@@ -44,9 +48,11 @@ class OutputValidator:
         except (jsonschema.ValidationError, jsonschema.SchemaError) as exc:
             raise OutputInvalidError("model output failed schema validation") from exc
         line = build_customer_output_line(title, description)
+        if note is not None:
+            line += f"\n注意：{note}"
         if find_sensitive_matches(self._patterns, line):
             raise OutputInvalidError("model output contains sensitive patterns")
         return VerifiedOutput(
-            title=title, description=description,
+            title=title, description=description, note=note,
             analysis=parsed.get("analysis"), validation=parsed.get("validation"),
         )

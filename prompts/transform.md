@@ -28,6 +28,7 @@ Produce `customer_output` that is:
 9. **Multiple independent business changes** → split into separate `customer_output` entries (return an array under `customer_output` if multiple, or follow the multi-change output pattern).
 10. **Every output carries a title** — even simple changes. Never emit a bare sentence without a title. The title names the affected module/feature area, formatted as `<模块/功能>功能<动作>`, e.g. `客显功能优化`, `安全模块功能新增`, `移动网络功能优化`, `系统日志功能扩展`. Use the module area already implied by the change (business facts), not R&D jargon.
 11. **Version upgrades MUST become a `版本变更：` block.** If the change point mentions any module/component version update — e.g. `更新版本号至NDK_V4.1.13`, `版本升级至V1.1.21`, `版本变更为 MDBSERVER_V1.0.11`, `须配合PaymentServer_V1.0.71T及以上` — you MUST append a `版本变更：` block after the description lines. Put EVERY version number ONLY in this block; NEVER in the title or description. Omitting the block when versions are present is a serious error. Never invent versions not present in the source.
+12. **Preserve attention notes in `customer_output.note`.** When the change point carries a note that customers need to be aware of — introduced by 注意／注意：／注：／注:／提醒 etc. — refine it into customer-readable language and put it in the `note` field. Notes typically flag: which products are (or are not) affected, a component/firmware that must be updated or synced together, or a deployment caveat. Abstract internal component/firmware names the customer needn't see (e.g. `mdbserver`/`NLPUpdater` → 相关组件), but KEEP the affected-product scope and any must-sync/must-update requirement — those are business facts. Drop test instructions, 测试方法, 自测checklist, and BUG/ticket IDs from the note. Emit `note` ONLY when the source actually carries such a note; otherwise omit the field entirely.
 
 ## Output Detail
 
@@ -72,6 +73,26 @@ MDB服务升级至 MDBSERVER_V1.0.11
 
 If the change point has no version upgrade, omit the block entirely — do not
 add an empty `版本变更：`.
+
+## 注意信息 (Attention Note)
+
+When the change point carries a 注意／注／提醒 note (see rule 12), refine it and
+emit it as `customer_output.note`. It renders as a standalone `注意：` line after
+the description — the version block (when present) stays on top:
+
+```
+title：description
+注意：此变更需同步更新相关固件与组件，仅影响U2000产品。
+```
+
+With a version upgrade:
+
+```
+title：description
+版本变更：
+<one version change per line>
+注意：此变更需同步更新相关固件与组件，仅影响U2000产品。
+```
 
 ## Recommended Templates
 

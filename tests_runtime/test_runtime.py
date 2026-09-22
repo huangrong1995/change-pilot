@@ -180,6 +180,59 @@ def test_intermediate_feishu_id_section_is_stripped_from_prefix():
     assert "5916" not in result.customer_line
 
 
+def test_attention_note_is_rendered_as_trailing_line():
+    # A 注／注意 source section is refined by the model into customer_output.note
+    # and rendered as a standalone 注意： line after the description.
+    raw = "改进：MDB模块 # 详细信息：降低功耗，修改MDB串口波特率为460800。\n注：需同步MDB固件、mdbserver、NLPUpdater更新，只影响U2000产品，其他产品不需要同步更新。\n测试方法：测试U2000 MDB基本功能是否正常。\n自测checklist: https://example"
+    payload = json.dumps({"customer_output": {
+        "title": "改进", "description": "降低功耗，修改MDB串口波特率为460800。",
+        "note": "此变更需同步更新相关固件与组件，仅影响U2000产品。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == (
+        "改进：MDB模块 # 详细信息： 降低功耗，修改MDB串口波特率为460800。\n"
+        "注意：此变更需同步更新相关固件与组件，仅影响U2000产品。"
+    )
+    assert result.note == "此变更需同步更新相关固件与组件，仅影响U2000产品。"
+
+
+def test_attention_note_in_no_prefix_render():
+    raw = "优化扫码功能。注意：此功能仅影响A12及以上平台。"
+    payload = json.dumps({"customer_output": {
+        "title": "扫码", "description": "优化扫码功能。",
+        "note": "此功能仅影响A12及以上平台。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == "扫码：优化扫码功能。\n注意：此功能仅影响A12及以上平台。"
+
+
+def test_attention_note_follows_version_block():
+    # With a version upgrade, the 注意： line stays last: version block, then the
+    # title line, then the note.
+    raw = "基于NDK_V4.1.12修改，更新版本号至NDK_V4.1.13。注意：需配合最新固件使用。"
+    payload = json.dumps({"customer_output": {
+        "title": "新功能", "description": "新增虚拟LED灯显示控制功能。",
+        "note": "需配合最新固件使用。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == (
+        "版本变更：\nNDK_V4.1.12 升级至 NDK_V4.1.13\n"
+        "新功能：新增虚拟LED灯显示控制功能。\n"
+        "注意：需配合最新固件使用。"
+    )
+
+
+def test_absent_note_leaves_no_note_line():
+    # No attention note in the source / model output → no 注意： line at all.
+    payload = json.dumps({"customer_output": {
+        "title": "扫码", "description": "优化扫码稳定性。",
+    }})
+    result = make_runtime(payload).transform("修复扫码", None, "default")
+    assert result.customer_line == "扫码：优化扫码稳定性。"
+    assert result.note is None
+    assert "注意" not in result.customer_line
+
+
 def test_buried_detail_marker_is_not_treated_as_prefix():
     # A ``# 详细信息`` line buried mid-document (not a leading ``类别: 模块``
     # header) must NOT turn the whole leading text into a bogus prefix. Real

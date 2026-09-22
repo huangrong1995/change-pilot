@@ -60,6 +60,7 @@ class TransformResult:
     title: str | None
     description: str
     customer_line: str
+    note: str | None = None
     analysis: dict[str, Any] | None = None
     validation: dict[str, Any] | None = None
     usage: ModelUsage = field(default_factory=ModelUsage)

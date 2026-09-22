@@ -70,6 +70,7 @@ class ChangePilotRuntime:
         description = _normalize_html_artifacts(verified.description)
         model_block, description = _split_version_block(description)
         version_block = build_version_block(extract_version_changes(raw_text)) or model_block
+        note = _normalize_html_artifacts(verified.note) if verified.note else None
         if prefix:
             # Fixed-prefix template: version block, then the verbatim prefix
             # followed by the refined description.
@@ -79,10 +80,15 @@ class ChangePilotRuntime:
             # No fixed prefix in the source: keep the plain 标题：描述 render.
             customer_line = _render_customer_line(
                 verified.title, description, version_block)
+        if note:
+            # A refined attention note surfaces as a standalone 注意： line after
+            # the description so customers see sync/deployment caveats.
+            customer_line += "\n注意：" + note
         return TransformResult(
             title=verified.title,
             description=description,
             customer_line=customer_line,
+            note=note,
             analysis=verified.analysis,
             validation=verified.validation,
             usage=reply.usage,

@@ -18,6 +18,9 @@ _INSTRUCTIONS = (
     "version, append a version block to description after the text, exactly:\n"
     "\\n版本变更：\\n{旧版本} 升级至 {新版本}\\n"
     "(never put version numbers inside the title or the description sentence).\n"
+    "When the source carries an attention note (注意／注／提醒 — sync requirements, "
+    "affected-product scope, deployment caveats), refine it into customer_output.note "
+    "(omit it when the source has no such note); it renders as a trailing 注意： line.\n"
     "Include analysis and validation only when the user prompt requests debug mode. "
     "Default mode returns customer_output only, using the full-width colon ：.\n"
     "Never emit chain-of-thought, reasoning, confidence scores, or any text outside "
@@ -41,7 +44,8 @@ class PromptBuilder:
         ctx = context if isinstance(context, dict) else {}
         return (
             f"Mode: {mode}\n"
-            "Target output (default): {title}：{description}\n"
+            "Target output (default): {title}：{description}, plus an optional trailing "
+            "注意：{note} line only when the source carries an attention note.\n"
             f"raw_text:\n{raw_text}\n\n"
             "context (disambiguation only, do not invent from):\n"
             f"{json.dumps(ctx, ensure_ascii=False)}"
