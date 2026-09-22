@@ -27,6 +27,13 @@ def test_compatibility_note_is_not_an_upgrade():
     assert extract_version_changes("配置了PaymentServer_V1.0.71T及以上版本使用") == []
 
 
+def test_sync_list_is_not_a_version_upgrade():
+    # A "must sync A、B、C更新" requirement carries no version numbers; it is a
+    # deployment note, never a version-change line or a trigger for a version block.
+    raw = "注：需同步MDB固件、mdbserver、NLPUpdater更新，只影响U2000产品，其他产品不需要同步更新。"
+    assert extract_version_changes(raw) == []
+
+
 def test_long_prefix_new_version_is_not_truncated():
     assert extract_version_changes("设备版本升级至PaymentServer_V1.0.72T") == ["设备版本升级至 PaymentServer_V1.0.72T"]
 

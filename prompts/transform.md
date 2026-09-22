@@ -28,7 +28,8 @@ Produce `customer_output` that is:
 9. **Multiple independent business changes** → split into separate `customer_output` entries (return an array under `customer_output` if multiple, or follow the multi-change output pattern).
 10. **Every output carries a title** — even simple changes. Never emit a bare sentence without a title. The title names the affected module/feature area, formatted as `<模块/功能>功能<动作>`, e.g. `客显功能优化`, `安全模块功能新增`, `移动网络功能优化`, `系统日志功能扩展`. Use the module area already implied by the change (business facts), not R&D jargon.
 11. **Version upgrades MUST become a `版本变更：` block.** If the change point mentions any module/component version update — e.g. `更新版本号至NDK_V4.1.13`, `版本升级至V1.1.21`, `版本变更为 MDBSERVER_V1.0.11`, `须配合PaymentServer_V1.0.71T及以上` — you MUST append a `版本变更：` block after the description lines. Put EVERY version number ONLY in this block; NEVER in the title or description. Omitting the block when versions are present is a serious error. Never invent versions not present in the source.
-12. **Preserve attention notes in `customer_output.note`.** When the change point carries a note that customers need to be aware of — introduced by 注意／注意：／注：／注:／提醒 etc. — refine it into customer-readable language and put it in the `note` field. Notes typically flag: which products are (or are not) affected, a component/firmware that must be updated or synced together, or a deployment caveat. Abstract internal component/firmware names the customer needn't see (e.g. `mdbserver`/`NLPUpdater` → 相关组件), but KEEP the affected-product scope and any must-sync/must-update requirement — those are business facts. Drop test instructions, 测试方法, 自测checklist, and BUG/ticket IDs from the note. Emit `note` ONLY when the source actually carries such a note; otherwise omit the field entirely.
+12. **Preserve attention notes in `customer_output.note`.** When the change point carries a note that customers need to be aware of — introduced by 注意／注意：／注：／注:／提醒 etc. — refine it into customer-readable language and put it in the `note` field. Notes typically flag: which products are (or are not) affected, a component/firmware that must be updated or synced together, or a deployment caveat. Abstract internal component/firmware names the customer needn't see (e.g. `mdbserver`/`NLPUpdater` → 相关组件), but KEEP the affected-product scope and any must-sync/must-update requirement — those are business facts. Drop test instructions, 测试方法, 自测checklist, and BUG/ticket IDs from the note. Emit `note` ONLY when the source actually carries such a note; otherwise omit the field entirely. **Never infer or invent a note the source does not state.** In particular, do NOT fabricate an affected-product scope or an upgrade requirement: a bare version reference (e.g. `版本V1.1.45`、`基于NDK_V4.1.11修改`) is NOT a note and must not become a `注意：此功能需升级至…/此变更仅影响…` line, unless the source explicitly ties that version to a scope/upgrade caveat.
+13. **A "must sync" requirement is a NOTE, never a version upgrade.** Phrasings like `需同步A、B、C更新`, `需配合…更新`, `需一起升级` describe a deployment/sync prerequisite — put them in `customer_output.note`, NOT in the `版本变更：` block. A `版本变更：` line requires a REAL version number abutting an explicit upgrade connector (`升级至`/`变更为`/`版本号更新至`/`更新版本号至`). Component names listed in a sync requirement without a version number (e.g. `MDB固件、mdbserver、NLPUpdater`) are NEVER version changes — never emit them as a version line, and never let them trigger a 版本变更 block on their own.
 
 ## Output Detail
 
@@ -71,6 +72,13 @@ NDK_V4.1.12 升级至 NDK_V4.1.13
 MDB服务升级至 MDBSERVER_V1.0.11
 ```
 
+**Do NOT confuse a sync/update requirement with a version upgrade.** A line like
+`需同步MDB固件、mdbserver、NLPUpdater更新` lists components to update together and
+carries no version numbers — it is a deployment caveat that belongs in
+`customer_output.note` (rule 13), never a `版本变更：` line and never a trigger
+for a version block. Only a real version abutting an explicit connector (`升级至`,
+`变更为`, `版本号更新至`, `更新版本号至`) is a version change.
+
 If the change point has no version upgrade, omit the block entirely — do not
 add an empty `版本变更：`.
 
@@ -79,6 +87,11 @@ add an empty `版本变更：`.
 When the change point carries a 注意／注／提醒 note (see rule 12), refine it and
 emit it as `customer_output.note`. It renders as a standalone `注意：` line after
 the description — the version block (when present) stays on top:
+
+**Only emit a note when the source explicitly states it.** Never fabricate an
+affected-product scope or an upgrade requirement the source does not state — a
+bare version reference (e.g. `版本V1.1.45`、`基于NDK_V4.1.11修改`) is not a note
+and must not become `注意：此功能需升级至…` / `注意：此变更仅影响…` on its own.
 
 ```
 title：description
@@ -92,6 +105,18 @@ title：description
 版本变更：
 <one version change per line>
 注意：此变更需同步更新相关固件与组件，仅影响U2000产品。
+```
+
+Input (attention note that is a sync requirement, NOT a version upgrade):
+> 改进：MDB模块 # 详细信息：mdb芯片降低功耗，修改mdb串口波特率为460800。
+> 注：需同步MDB固件、mdbserver、NLPUpdater更新，只影响U2000产品，其他产品不需要同步更新。
+
+Output — the sync list is a note (abstracted to 相关组件), not a 版本变更 block,
+because no version number abuts an upgrade connector:
+
+```
+改进：MDB模块 # 详细信息： 优化MDB芯片功耗，适用于U2000产品。
+注意：此变更需同步更新相关固件与组件，仅影响U2000产品，其他产品无需同步更新。
 ```
 
 ## Recommended Templates

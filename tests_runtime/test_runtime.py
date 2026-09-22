@@ -233,6 +233,26 @@ def test_absent_note_leaves_no_note_line():
     assert "注意" not in result.customer_line
 
 
+def test_sync_list_note_renders_and_never_becomes_version_block():
+    # The real MDB change point: a 注： sync requirement (需同步…更新) with no
+    # version numbers. The model refines it into note; the deterministic extractor
+    # must NOT turn the sync list into a 版本变更： block.
+    raw = ("改进：MDB模块 # 详细信息：mdb芯片降低功耗，修改mdb串口波特率为460800。\n"
+           "注：需同步MDB固件、mdbserver、NLPUpdater更新，只影响U2000产品，其他产品不需要同步更新。")
+    payload = json.dumps({"customer_output": {
+        "title": "改进", "description": "优化MDB芯片功耗，适用于U2000产品。",
+        "note": "此变更需同步更新相关固件与组件，仅影响U2000产品，其他产品无需同步更新。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    assert result.customer_line == (
+        "改进：MDB模块 # 详细信息： 优化MDB芯片功耗，适用于U2000产品。\n"
+        "注意：此变更需同步更新相关固件与组件，仅影响U2000产品，其他产品无需同步更新。"
+    )
+    assert "版本变更" not in result.customer_line
+    assert "mdbserver" not in result.customer_line
+    assert "NLPUpdater" not in result.customer_line
+
+
 def test_buried_detail_marker_is_not_treated_as_prefix():
     # A ``# 详细信息`` line buried mid-document (not a leading ``类别: 模块``
     # header) must NOT turn the whole leading text into a bogus prefix. Real
