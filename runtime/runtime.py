@@ -227,8 +227,15 @@ def _prepend_version_block(line: str, version_block: str | None) -> str:
 # the marker) is preserved verbatim for the customer line; the body between it
 # and the next ``#``-led section (or the end) is what the customerization model
 # refines.
+#
+# The marker must sit on the FIRST line (right after a short ``类别: 模块``
+# header): some change sheets bury a ``… # 详细信息：…`` line inside a longer
+# document (e.g. after a ``版本信息`` section), and matching it there would treat
+# the entire leading text as a bogus "prefix" and echo it verbatim. Requiring no
+# ``\n`` before the marker keeps the prefixed path for genuine leading headers
+# and lets the rest fall back to the plain ``标题：描述`` render.
 _SOURCE_SECTION = re.compile(
-    r"^(.*?#\s*详细信息[:：])\s*(.*?)(?=\n\s*#|\Z)",
+    r"^([^\n]*?#\s*详细信息[:：])\s*(.*?)(?=\n\s*#|\Z)",
     re.DOTALL | re.IGNORECASE,
 )
 

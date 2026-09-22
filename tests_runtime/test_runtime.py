@@ -150,6 +150,38 @@ def test_ascii_detail_colon_preserves_prefix():
     assert result.customer_line == "改进:adbd # 详细信息: 优化用户版本下的系统日志输出。"
 
 
+def test_buried_detail_marker_is_not_treated_as_prefix():
+    # A ``# 详细信息`` line buried mid-document (not a leading ``类别: 模块``
+    # header) must NOT turn the whole leading text into a bogus prefix. Real
+    # change sheets occasionally carry a ``… # 详细信息：…`` line after a
+    # ``版本信息`` section; that source is a no-prefix point, so it should render
+    # plain ``标题：描述`` with the AI title — never echo the whole ``1、版本信息…``
+    # preamble verbatim.
+    raw = (
+        "1、版本信息\n"
+        "3652/3654通用安全模块MASTER版本信息\n"
+        "master版本由3.6.00.16变更为3.6.00.17；\n"
+        "2、详细变更说明\n"
+        "新增接口NDK_RfidFunisSupport，获取设备是否支持HCE或LPCD模式；\n"
+        "3、自测checklist：\n"
+        "https://newlandnpt.feishu.cn/sheets/NjGisIWrW\n"
+        "新功能：安全模块 # 详细信息：MAPP_V9.63.20.06"
+    )
+    payload = json.dumps({"customer_output": {
+        "title": "安全模块",
+        "description": "新增RFID功能查询接口，支持查询设备是否支持HCE或LPCD模式。",
+    }})
+    result = make_runtime(payload).transform(raw, None, "default")
+    # Renders as a no-prefix point with the AI title, not the bogus prefix.
+    assert result.customer_line == (
+        "安全模块：新增RFID功能查询接口，支持查询设备是否支持HCE或LPCD模式。"
+    )
+    # The preamble / checklist / buried marker must never surface as a prefix.
+    assert "1、版本信息" not in result.customer_line
+    assert "feishu" not in result.customer_line
+    assert "MAPP_V9.63.20.06" not in result.customer_line
+
+
 def test_fixed_prefix_without_version_leaves_no_block():
     raw = _make_raw("改进: 触摸屏", "优化触摸灵敏度。")
     payload = json.dumps({"customer_output": {
